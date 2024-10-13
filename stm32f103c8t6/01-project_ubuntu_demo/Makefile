@@ -1,10 +1,10 @@
 TARGET	:= demo
 OUT_DIR	:= out
 
-REMOTE_USER	:=
-REMOTE_IP	:=
-REMOTE_PASSWD	:=
-REMOTE_DIR	:=
+REMOTE_USER	:= 
+REMOTE_IP	:= 
+REMOTE_PASSWD	:= 
+REMOTE_DIR	:= /home/heng/workspace/stm32/
 REMOTE_DNSCRIPT	:= download_script.jlink 
 
 CROSS_COMPILE	:= arm-none-eabi-
@@ -17,10 +17,15 @@ DEFINE	:= -DUSE_STDPERIPH_DRIVER \
 	   -DSTM32F10X_MD
 
 CFLAGS	:= -g \
+	   -Os \
+	   -ffunction-sections \
+	   -fdata-sections \
 	   -mcpu=cortex-m3 \
 	   -mthumb \
 	   -nostartfiles
-#	   --specs=nosys.specs
+
+LDFLAGS	:= -Wl,--gc-sections \
+	   -Wl,-Map=$(OUT_DIR)/$(TARGET).map
 
 LIBS	:= 
 
@@ -76,7 +81,7 @@ all: $(TARGET).elf
 
 $(TARGET).elf: $(OBJS)
 	@echo "Link all, Create elf file $(OUT_DIR)/$@"
-	@$(CC) $(INC) $(CFLAGS) $(LIBS) -Wl,-Map=$(OUT_DIR)/$(TARGET).map $(OBJO) \
+	@$(CC) $(INC) $(CFLAGS) $(LIBS) $(LDFLAGS) $(OBJO) \
 		-T$(LDFILE) -o $(OUT_DIR)/$@
 	@$(OBJSIZE) $(OUT_DIR)/$@
 
@@ -90,10 +95,20 @@ $(TARGET).elf: $(OBJS)
 
 burn:
 	@echo "Copy the $(TARGET).bin to remote server $(REMOTE_IP):$(REMOTE_DIR)"
-	@echo "erase\nloadfile $(REMOTE_DIR)$(TARGET).bin\nreset\nexit\n" > $(OUT_DIR)/$(REMOTE_DNSCRIPT)
-	@expect -c "set timeout -1; spawn scp $(OUT_DIR)/$(TARGET).bin $(OUT_DIR)/$(REMOTE_DNSCRIPT) $(REMOTE_USER)@$(REMOTE_IP):$(REMOTE_DIR); expect \"password:\"; send \"$(REMOTE_PASSWD)\r\"; interact"
+	@echo "erase\nloadfile $(REMOTE_DIR)$(TARGET).bin\nreset\nexit\n" > \
+		$(OUT_DIR)/$(REMOTE_DNSCRIPT)
+	@expect -c "set timeout -1; spawn \
+		scp $(OUT_DIR)/$(TARGET).bin $(OUT_DIR)/$(REMOTE_DNSCRIPT) $(REMOTE_USER)@$(REMOTE_IP):$(REMOTE_DIR); \
+		expect \"password:\"; \
+		send \"$(REMOTE_PASSWD)\r\"; \
+		interact"
 	@echo "Download the remote $(OUT_DIR)/$(TARGET).bin to device flash"
-	@expect -c "set timeout -1; spawn ssh $(REMOTE_USER)@$(REMOTE_IP) \"JLinkExe -device STM32F103C8 -if swd -speed 4000 -CommanderScript $(REMOTE_DIR)/$(REMOTE_DNSCRIPT)\"; expect \"password:\"; send \"$(REMOTE_PASSWD)\r\"; interact"
+	@expect -c "set timeout -1; spawn \
+		ssh $(REMOTE_USER)@$(REMOTE_IP) \
+		\"JLinkExe -device STM32F103C8 -if swd -speed 4000 -CommanderScript $(REMOTE_DIR)/$(REMOTE_DNSCRIPT)\"; \
+		expect \"password:\"; \
+		send \"$(REMOTE_PASSWD)\r\"; \
+		interact"
 
 .PHONY:
 clean:
