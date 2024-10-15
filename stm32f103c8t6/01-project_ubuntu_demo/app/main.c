@@ -7,7 +7,7 @@ void Delay(__IO u32 nCount);
 int main(void)
 {  
   SystemInit();       // 72M 
-  USART1_Config();    // USART1
+  // USART1_Config();    // USART1
   led_config();       // PC13
 
   while (1)
