@@ -35,6 +35,7 @@ LDSRAMFILE	:= ./libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/stm32_sram.ld
 INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x \
 	   -I./libraries/STM32F10x_StdPeriph_Driver/inc \
+	   -I./drivers/config \
 	   -I./drivers \
 	   -I./app
 
@@ -63,7 +64,8 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c \
 	   libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c \
 	   libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_wwdg.c \
-	   drivers/stm32f10x_it.c \
+	   drivers/config/stm32f10x_it.c \
+	   drivers/delay.c \
 	   drivers/usart1.c \
 	   drivers/led.c \
 	   app/main.c
@@ -119,7 +121,7 @@ dnload:
 		send \"$(REMOTE_PASSWD)\r\"; \
 		interact"
 
-burn: dnload
+flash: dnload
 	@echo "Burn the remote $(REMOTE_DIR)/$(TARGET).bin to device flash"
 	@expect -c "set timeout -1; spawn \
 		ssh $(REMOTE_USER)@$(REMOTE_IP) \

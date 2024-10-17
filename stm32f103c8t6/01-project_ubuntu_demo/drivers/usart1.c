@@ -7,10 +7,15 @@
  *           ------------------------
 
 **********************************************************************************/
-
 #include "usart1.h"
 #include <stdarg.h>
 
+struct ringbuf {
+	uint8_t *bf;
+	int len;
+	int count;
+
+};
 
 void USART1_Config(void)
 {
@@ -22,13 +27,13 @@ void USART1_Config(void)
 
 	/* USART1 pin */    
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;         // pull up
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
         GPIO_Init(GPIOA, &GPIO_InitStructure);    
         
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;   // float
-        GPIO_Init(GPIOA, &GPIO_InitStructure);                  //config GPIOA
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+        GPIO_Init(GPIOA, &GPIO_InitStructure);
 	  
 	/* USART1 config */
 	USART_InitStructure.USART_BaudRate = 115200;            // board rate 115200
