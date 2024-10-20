@@ -15,8 +15,8 @@ void INTX_ENABLE(void)
 	__ASM volatile("cpsie i");		  
 }
 
-__asm void MSR_MSP(u32 addr) 
+void MSR_MSP(u32 addr) 
 {
-    MSR MSP, r0 			// set Main Stack value
-    BX r14
+	__ASM volatile("MSR MSP, r0"); 			// set Main Stack value
+	__ASM volatile("BX r14");
 }

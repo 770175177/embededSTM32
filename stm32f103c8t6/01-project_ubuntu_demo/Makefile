@@ -6,6 +6,7 @@ REMOTE_IP	:= 192.168.0.109
 REMOTE_PASSWD	:= 770175177
 REMOTE_DIR	:= /home/heng/workspace/stm32/
 REMOTE_DNSCRIPT	:= download_script.jlink 
+GDBCMD_SCRIPT	:= gdb.script
 
 CROSS_COMPILE	:= arm-none-eabi-
 CC 	:= $(CROSS_COMPILE)gcc
@@ -36,7 +37,11 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x \
 	   -I./libraries/STM32F10x_StdPeriph_Driver/inc \
 	   -I./drivers/config \
-	   -I./drivers \
+	   -I./drivers/delay \
+	   -I./drivers/led \
+	   -I./drivers/sys \
+	   -I./drivers/uart \
+	   -I./drivers/mini_printf \
 	   -I./app
 
 SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
@@ -65,9 +70,11 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c \
 	   libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_wwdg.c \
 	   drivers/config/stm32f10x_it.c \
-	   drivers/delay.c \
-	   drivers/usart1.c \
-	   drivers/led.c \
+	   drivers/delay/delay.c \
+	   drivers/led/led.c \
+	   drivers/sys/sys.c \
+	   drivers/uart/usart.c \
+	   drivers/mini_printf/mini_printf.c \
 	   app/main.c
 
 OBJS	:= $(patsubst %.c,%.o,$(patsubst %.s,%.o,$(SRCS)))
@@ -112,7 +119,7 @@ $(TARGET)_sram.elf: $(OBJS)
 
 dnload:
 	@echo "Copy the $(TARGET).bin to remote server $(REMOTE_IP):$(REMOTE_DIR)"
-	@echo "erase\nloadfile $(REMOTE_DIR)$(TARGET).bin\nreset\nexit\n" > \
+	@echo "erase\nloadfile $(REMOTE_DIR)$(TARGET).bin 0x08000000\nreset\nexit\n" > \
 		$(OUT_DIR)/$(REMOTE_DNSCRIPT)
 	@expect -c "set timeout -1; spawn \
 		scp $(OUT_DIR)/$(TARGET).bin $(OUT_DIR)/$(REMOTE_DNSCRIPT) \
@@ -130,6 +137,12 @@ flash: dnload
 		expect \"password:\"; \
 		send \"$(REMOTE_PASSWD)\r\"; \
 		interact"
+
+debug:
+	@echo "set architecture arm\ntar remote $(REMOTE_IP):2331\n \
+		load\nlayout src\nb main\nc\n" > \
+		$(OUT_DIR)/$(GDBCMD_SCRIPT)
+	@gdb-multiarch $(OUT_DIR)/$(TARGET).elf -x $(OUT_DIR)/$(GDBCMD_SCRIPT)
 
 .PHONY:
 clean:
