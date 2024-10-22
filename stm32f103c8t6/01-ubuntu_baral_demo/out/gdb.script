@@ -1,0 +1,7 @@
+set architecture arm
+tar remote 192.168.0.109:2331
+ 	load
+layout src
+b main
+c
+
