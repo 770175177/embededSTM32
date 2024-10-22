@@ -36,12 +36,14 @@ LDSRAMFILE	:= ./libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/stm32_sram.ld
 INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x \
 	   -I./libraries/STM32F10x_StdPeriph_Driver/inc \
+	   -I./include \
 	   -I./drivers/config \
 	   -I./drivers/delay \
 	   -I./drivers/led \
 	   -I./drivers/sys \
 	   -I./drivers/uart \
-	   -I./drivers/mini_printf \
+	   -I./include/mini_printf \
+	   -I./include/ring_buffer \
 	   -I./app
 
 SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
@@ -74,7 +76,8 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/led/led.c \
 	   drivers/sys/sys.c \
 	   drivers/uart/usart.c \
-	   drivers/mini_printf/mini_printf.c \
+	   include/mini_printf/mini_printf.c \
+	   include/ring_buffer/ring_buffer.c \
 	   app/main.c
 
 OBJS	:= $(patsubst %.c,%.o,$(patsubst %.s,%.o,$(SRCS)))

@@ -3,6 +3,7 @@
 #include "misc.h"
 #include "led.h"
 #include "usart.h"
+#include <string.h>
 
 void hardware_init();
 
@@ -10,21 +11,16 @@ int main(void)
 { 
     u8 len, led = LED_OFF;
     u16 times = 0;
-    int n;
+    u8 data[64] = {0};
 
     hardware_init();
     usart_printf("hello my mini printf\r\n");
 
     while (1) {
-      if(USART_RX_STA & 0x4000) {			   
-        len = USART_RX_STA & 0x3fff;
-        usart_printf("\nsend message is: %s\n", USART_RX_BUF);
-        USART_RX_STA=0;
+      if(len = usart_gets(data)) {			   
+        usart_printf("get data is: %s(len=%d)\n", data, len);
       } else {
         times++;
-        if(times % 400 == 0) {
-          usart_printf("printf index %d\r\n", times);
-        }
         if(times % 100 == 0) {
           led = !led;
           led_switch(led);
