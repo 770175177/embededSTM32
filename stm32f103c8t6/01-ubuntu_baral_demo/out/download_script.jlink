@@ -1,5 +1,0 @@
-erase
-loadfile /home/heng/workspace/stm32/demo.bin 0x08000000
-reset
-exit
-
