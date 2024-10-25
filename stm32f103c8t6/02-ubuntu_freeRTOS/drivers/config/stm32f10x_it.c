@@ -23,10 +23,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
 
-#define xPortPendSVHandler  PendSV_Handler
-#define vPortSVCHandler     SVC_Handler
-#define xPortSysTickHandler SysTick_Handler
-
 /** @addtogroup Template_Project
   * @{
   */

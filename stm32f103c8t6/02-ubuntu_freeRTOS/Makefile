@@ -90,6 +90,8 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/uart/usart.c \
 	   include/mini_printf/mini_printf.c \
 	   include/ring_buffer/ring_buffer.c \
+	   app/app_tasks.c \
+	   app/app_init.c \
 	   app/main.c
 
 OBJS	:= $(patsubst %.c,%.o,$(patsubst %.s,%.o,$(SRCS)))

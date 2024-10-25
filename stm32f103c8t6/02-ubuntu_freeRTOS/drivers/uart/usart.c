@@ -96,16 +96,11 @@ void uart_init(u32 bound)
 void USART1_IRQHandler(void)
 {
 	u8 res;
-#if SYSTEM_SUPPORT_OS
-	OSIntEnter();
-#endif
+
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
 		res = USART_ReceiveData(USART1);
 
 		ring_buffer_queue(&usart_rb, res);
-     } 
-#if SYSTEM_SUPPORT_OS
-	OSIntExit();										 
-#endif
+     }
 }
 	
