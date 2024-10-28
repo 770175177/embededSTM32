@@ -272,6 +272,26 @@ mini_vpprintf(int (*puts)(char* s, int len, void* buf), void* buf, const char *f
 					mini_handler_freeor(mini_handler_data, ptr);
 					break;
 #endif
+#if (SEGGER_RTT_PRINT_FLOAT_ENABLE != 0)	
+				case 'f':
+				case 'F':
+					{
+					float fv;
+					fv = (float)va_arg(*pParamList, double);    // 取出输入的浮点数值
+					
+					if(fv < 0) _StoreChar(&BufferDesc, '-');    // 判断正负，用来显示负号
+					
+					ch = abs((int)fv);                           //取整数部分
+
+					_PrintInt(&BufferDesc, ch, 10u, NumDigits, FieldWidth, FormatFlags);  // 显示整数
+					_StoreChar(&BufferDesc, '.');                                        // 显示小数点
+
+					ch = abs((int)(fv * 1000));               
+					ch = ch % 1000;
+					_PrintInt(&BufferDesc, ch, 10u, 3, FieldWidth, FormatFlags);          // 显示小数点后三位
+					}
+					break;
+#endif
 				default:
 					len = 1;
 					len = puts(&ch, len, buf);

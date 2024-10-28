@@ -9,6 +9,8 @@ typedef enum {
 } LED_STATUS;
 
 void led_init(void);
-void led_switch(LED_STATUS light);
+void led_switch();
+void led_light(LED_STATUS light);
+unsigned char led_status(void);
 
 #endif /* __LED_H__ */

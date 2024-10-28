@@ -38,6 +38,16 @@ int usart_gets(char* s)
 	return 0;
 }
 
+char usart_getc(void)
+{
+	char data;
+
+	if (ring_buffer_dequeue(&usart_rb, &data))
+		return data;
+	else
+		return 0;
+}
+
 int usart_printf(const char *fmt, ...)
 {
 	int ret;

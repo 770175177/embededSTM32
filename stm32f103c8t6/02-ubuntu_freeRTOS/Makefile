@@ -44,9 +44,10 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./drivers/delay \
 	   -I./drivers/led \
 	   -I./drivers/sys \
-	   -I./drivers/uart \
+	   -I./drivers/usart \
 	   -I./include/mini_printf \
 	   -I./include/ring_buffer \
+	   -I./include/cmd_line/lib/include \
 	   -I./app
 
 SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
@@ -87,11 +88,13 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/delay/delay.c \
 	   drivers/led/led.c \
 	   drivers/sys/sys.c \
-	   drivers/uart/usart.c \
+	   drivers/usart/usart.c \
 	   include/mini_printf/mini_printf.c \
 	   include/ring_buffer/ring_buffer.c \
+	   include/cmd_line/lib/src/embedded_cli.c \
 	   app/app_tasks.c \
 	   app/app_init.c \
+	   app/app_cmd.c \
 	   app/main.c
 
 OBJS	:= $(patsubst %.c,%.o,$(patsubst %.s,%.o,$(SRCS)))
