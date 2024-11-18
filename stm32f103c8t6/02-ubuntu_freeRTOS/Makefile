@@ -45,6 +45,7 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./drivers/led \
 	   -I./drivers/sys \
 	   -I./drivers/usart \
+	   -I./drivers/pwm \
 	   -I./include/mini_printf \
 	   -I./include/ring_buffer \
 	   -I./include/cmd_line/lib/include \
@@ -89,6 +90,7 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/led/led.c \
 	   drivers/sys/sys.c \
 	   drivers/usart/usart.c \
+	   drivers/pwm/pwm.c \
 	   include/mini_printf/mini_printf.c \
 	   include/ring_buffer/ring_buffer.c \
 	   include/cmd_line/lib/src/embedded_cli.c \

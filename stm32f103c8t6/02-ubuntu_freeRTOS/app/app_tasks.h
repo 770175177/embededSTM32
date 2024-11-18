@@ -4,6 +4,9 @@
 #include "FreeRTOS.h"
 #include "task.h"
  
-void main_task(void* pvParamenters);
+void task_main(void* pvParamenters);
+void subtask1_sensors(void *pvParameters);
+void subtask2_motors(void *pvParameters);
+extern void create_subtasks(void);
 
 #endif	/* end __APP_TASKS__ */

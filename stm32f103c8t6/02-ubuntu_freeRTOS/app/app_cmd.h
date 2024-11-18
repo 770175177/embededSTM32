@@ -19,5 +19,6 @@ void onLed(EmbeddedCli *cli, char *args, void *context);
 void onAdc(EmbeddedCli *cli, char *args, void *context);
 
 void cmd_setup(void);
+void embeddedCliLoop(void);
 
 #endif	/* end __APP_CMD__ */

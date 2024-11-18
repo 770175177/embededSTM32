@@ -75,6 +75,20 @@ void embeddedCliBing(EmbeddedCli *cli)
         embeddedCliAddBinding(cli, bing[i]);
 }
 
+void embeddedCliLoop(void)
+{
+    char c;
+
+    if (cli == NULL)
+        return;
+
+    while (c = usart_getc()) {
+        embeddedCliReceiveChar(cli, c);
+    }
+
+    embeddedCliProcess(cli);
+}
+
 void onCommand(EmbeddedCli *embeddedCli, CliCommand *command) {
     usart_printf("Received command:");
     usart_printf("%s", command->name);

@@ -52,7 +52,7 @@
 #endif
 /* 中断最低优先级 */
 #define configLIBRARY_LOWEST_INTERRUPT_PRIORITY			15
-/* 系统柯管理的最高中断优先级 */
+/* 系统可管理的最高中断优先级 */
 #define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY	5
 #define configKERNEL_INTERRUPT_PRIORITY 		( configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY 	( configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
@@ -129,7 +129,7 @@ extern uint32_t SystemCoreClock;
 /* configMAX_PRIORITIES Sets the number of available task priorities.  Tasks can
  * be assigned priorities of 0 to (configMAX_PRIORITIES - 1).  Zero is the lowest
  * priority. */
-#define configMAX_PRIORITIES                       5
+#define configMAX_PRIORITIES                       16
 
 /* configMINIMAL_STACK_SIZE defines the size of the stack used by the Idle task
  * (in words, not in bytes!).  The kernel does not use this constant for any other
@@ -303,7 +303,7 @@ extern uint32_t SystemCoreClock;
  * or heap_4.c are included in the build.  This value is defaulted to 4096 bytes but
  * it must be tailored to each application.  Note the heap will appear in the .bss
  * section.  See https://www.freertos.org/a00111.html. */
-#define configTOTAL_HEAP_SIZE                        4096
+#define configTOTAL_HEAP_SIZE                        (8 * 1024)
 
 /* Set configAPPLICATION_ALLOCATED_HEAP to 1 to have the application allocate
  * the array used as the FreeRTOS heap.  Set to 0 to have the linker allocate the

@@ -3,10 +3,12 @@
 #include "usart.h"
 #if SYSTEM_SUPPORT_OS
 #include "FreeRTOS.h"
+#include "semphr.h"
 #endif
 
 static u8 USART_RX_BUF[USART_REC_LEN];
 ring_buffer_t usart_rb;
+static SemaphoreHandle_t print_mutex;  // 互斥锁句柄
 
 int usart_puts(char* s)
 {
@@ -57,7 +59,10 @@ int usart_printf(const char *fmt, ...)
 	va_start(va, fmt);
 	ret = mini_vsnprintf(mini_buff, USART_PRINT_LEN, fmt, va);
 	va_end(va);
+
+	xSemaphoreTake(print_mutex, portMAX_DELAY);
 	ret = usart_puts(mini_buff);
+	xSemaphoreGive(print_mutex);
 
 	return ret;
 }
@@ -101,6 +106,7 @@ void uart_init(u32 bound)
 	USART_Cmd(USART1, ENABLE);
 
 	ring_buffer_init(&usart_rb, USART_RX_BUF, sizeof(USART_RX_BUF));
+	print_mutex = xSemaphoreCreateMutex();
 }
 
 void USART1_IRQHandler(void)
