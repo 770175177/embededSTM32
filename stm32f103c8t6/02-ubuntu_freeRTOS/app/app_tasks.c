@@ -46,7 +46,7 @@ void subtask1_sensors(void *pvParameters)
 
 	while(1) {
 
-		vTaskDelay(10);
+		vTaskDelay(100);
 	}
 }
 
@@ -59,7 +59,10 @@ void subtask2_motors(void *pvParameters)
 	lastTimestampCount = lastTickCount;
 
 	usart_printf("\r\nMotors Task Create\r\n");
-	tim1_pwm_set_duty(800);
+	tim4_pwm_set_duty(PWM4_CH1, PWM4_PER_MAX/4*4);
+	tim4_pwm_set_duty(PWM4_CH2, PWM4_PER_MAX);
+	tim4_pwm_set_duty(PWM4_CH3, PWM4_PER_MAX/4*2);
+	tim4_pwm_set_duty(PWM4_CH4, PWM4_PER_MAX/4*3);
 
 	while(1) {
 		currentTickCount = xTaskGetTickCount();
@@ -70,6 +73,8 @@ void subtask2_motors(void *pvParameters)
 			usart_printf("\r\n[%d] Motors Task is running",
 				currentTickCount / configTICK_RATE_HZ);
 		}
+
+		vTaskDelay(10);
 	}
 }
 

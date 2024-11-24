@@ -14,7 +14,7 @@ void app_init(void)
     delay_init();
     led_init();       		// PC13
     uart_init(115200);
-	tim1_pwm_init(899, 0);	// 不分频，pwm频率 = 72000 / (899 + 1) = 80KHz
+	tim4_pwm_init(PWM4_PER_MAX);
 
 	usart_printf("\r\nMy FreeRTOS Project\r\n");
 	usart_printf("My FreeRTOS Hardware Init Ok!\r\n");
