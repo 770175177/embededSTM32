@@ -2,4 +2,5 @@ GPATH
 GRTAGS
 GTAGS
 out/
+.vscode/
 *.o

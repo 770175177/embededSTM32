@@ -4,14 +4,15 @@
 #include "led.h"
 #include "usart.h"
 #include "pwm.h"
+#include "adxl345.h"
 #include "app_tasks.h"
- 
+
 void task_main(void *pvParameters)
 {
 	TickType_t currentTickCount, TickCount;
 	TickType_t lastTickCount, lastTimestampCount;
 
-	usart_printf("\r\nMain Task Create\r\n");
+	usart_printf("\r\nMain Task Create");
 
 	taskENTER_CRITICAL();
 	create_subtasks();
@@ -30,10 +31,10 @@ void task_main(void *pvParameters)
 		}
 
 		TickCount = currentTickCount - lastTimestampCount;
-		if (TickCount > pdMS_TO_TICKS(5000)) {
+		if (TickCount > pdMS_TO_TICKS(10000)) {
 			lastTimestampCount = currentTickCount;
-			usart_printf("\r\n[%d] Main Task is running",
-				currentTickCount / configTICK_RATE_HZ);
+			// usart_printf("\r\n[%d] Main Task is running",
+			// 	currentTickCount / configTICK_RATE_HZ);
 		}
 
 		vTaskDelay(10);
@@ -42,7 +43,7 @@ void task_main(void *pvParameters)
 
 void subtask1_sensors(void *pvParameters)
 {
-	usart_printf("\r\nSensors Task Create\r\n");
+	usart_printf("\r\nSensors Task Create");
 
 	while(1) {
 
@@ -54,24 +55,30 @@ void subtask2_motors(void *pvParameters)
 {
 	TickType_t currentTickCount, TickCount;
 	TickType_t lastTickCount, lastTimestampCount;
+	int16_t xAxis, yAxis, zAxis;
+
+	adxl345_init();
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
 
-	usart_printf("\r\nMotors Task Create\r\n");
-	tim4_pwm_set_duty(PWM4_CH1, PWM4_PER_MAX/4*4);
-	tim4_pwm_set_duty(PWM4_CH2, PWM4_PER_MAX);
-	tim4_pwm_set_duty(PWM4_CH3, PWM4_PER_MAX/4*2);
-	tim4_pwm_set_duty(PWM4_CH4, PWM4_PER_MAX/4*3);
+	usart_printf("\r\nMotors Task Create");
+
+	tim4_pwm_set_duty(PWM4_CH1, PWM4_PER_MAX);
+	tim4_pwm_set_duty(PWM4_CH2, 0);
+	tim4_pwm_set_duty(PWM4_CH3, PWM4_PER_MAX);
+	tim4_pwm_set_duty(PWM4_CH4, 0);
 
 	while(1) {
 		currentTickCount = xTaskGetTickCount();
+		adxl345_read_xyz_axis(&xAxis, &yAxis, &zAxis);
 
 		TickCount = currentTickCount - lastTickCount;
 		if (TickCount > pdMS_TO_TICKS(1000)) {
 			lastTickCount = currentTickCount;
-			usart_printf("\r\n[%d] Motors Task is running",
-				currentTickCount / configTICK_RATE_HZ);
+
+			usart_printf("\r\n[%d] Motors Task is running, X: %d, Y: %d, Z: %d",
+				currentTickCount / configTICK_RATE_HZ, xAxis, yAxis, zAxis);
 		}
 
 		vTaskDelay(10);

@@ -11,11 +11,15 @@ void app_init(void)
 	//将全部优先级设为抢占优先级
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
 
+	uart_init(115200);
     delay_init();
     led_init();       		// PC13
-    uart_init(115200);
 	tim4_pwm_init(PWM4_PER_MAX);
 
-	usart_printf("\r\nMy FreeRTOS Project\r\n");
-	usart_printf("My FreeRTOS Hardware Init Ok!\r\n");
+	usart_printf("\r\n");
+	usart_printf("\r\n##################################");
+	usart_printf("\r\n##                              ##");
+	usart_printf("\r\n##      My FreeRTOS Project     ##");
+	usart_printf("\r\n##################################");
+	usart_printf("\r\nHardware Init Ok!");
 }

@@ -40,9 +40,13 @@ void tim4_pwm_init(u16 period)
 	TIM_OC4Init(TIM4, &TIM_OCInitStructure);				// 初始化TIM1 CH4
 
 	TIM_CtrlPWMOutputs(TIM4, ENABLE);						// MOE使能
+	TIM_SetCompare1(TIM4, 0);
 	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH1预装载使能
+	TIM_SetCompare2(TIM4, 0);
 	TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH2预装载使能
+	TIM_SetCompare3(TIM4, 0);
 	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH3预装载使能
+	TIM_SetCompare4(TIM4, 0);
 	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH4预装载使能
 	TIM_ARRPreloadConfig(TIM4, ENABLE);						// 使能TIM1在ARR上的预装载寄存器
 	TIM_Cmd(TIM4, ENABLE);									// 使能TIM1

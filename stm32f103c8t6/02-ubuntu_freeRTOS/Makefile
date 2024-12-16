@@ -2,7 +2,7 @@ TARGET	:= demo
 OUT_DIR	:= out
 
 REMOTE_USER	:= heng
-REMOTE_IP	:= 192.168.0.109
+REMOTE_IP	:= 192.168.0.101
 REMOTE_PASSWD	:= 770175177
 REMOTE_DIR	:= /home/heng/workspace/stm32/
 REMOTE_DNSCRIPT	:= download_script.jlink 
@@ -46,6 +46,8 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./drivers/sys \
 	   -I./drivers/usart \
 	   -I./drivers/pwm \
+	   -I./drivers/spi \
+	   -I./hal/adxl345 \
 	   -I./include/mini_printf \
 	   -I./include/ring_buffer \
 	   -I./include/cmd_line/lib/include \
@@ -91,6 +93,8 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/sys/sys.c \
 	   drivers/usart/usart.c \
 	   drivers/pwm/pwm.c \
+	   drivers/spi/spi.c \
+	   hal/adxl345/adxl345.c \
 	   include/mini_printf/mini_printf.c \
 	   include/ring_buffer/ring_buffer.c \
 	   include/cmd_line/lib/src/embedded_cli.c \
