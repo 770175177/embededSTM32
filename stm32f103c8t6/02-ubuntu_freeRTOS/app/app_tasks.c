@@ -5,6 +5,9 @@
 #include "usart.h"
 #include "pwm.h"
 #include "adxl345.h"
+#include "kalman.h"
+#include "pid.h"
+#include "car.h"
 #include "app_tasks.h"
 
 void task_main(void *pvParameters)
@@ -55,30 +58,34 @@ void subtask2_motors(void *pvParameters)
 {
 	TickType_t currentTickCount, TickCount;
 	TickType_t lastTickCount, lastTimestampCount;
-	int16_t xAxis, yAxis, zAxis;
+	kalman kfp, *pkfp = &kfp;
+	pid_t pid, *ppid = &pid;
+	int16_t xAxis, yAxis, zAxis, kxAxis;
+	int32_t pidOut = 0;
 
 	adxl345_init();
+	kalman_init(pkfp);
+	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
+	pid_set_param(ppid, 5.0f, 0.0f, 0.0f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
 
 	usart_printf("\r\nMotors Task Create");
 
-	tim4_pwm_set_duty(PWM4_CH1, PWM4_PER_MAX);
-	tim4_pwm_set_duty(PWM4_CH2, 0);
-	tim4_pwm_set_duty(PWM4_CH3, PWM4_PER_MAX);
-	tim4_pwm_set_duty(PWM4_CH4, 0);
-
 	while(1) {
 		currentTickCount = xTaskGetTickCount();
-		adxl345_read_xyz_axis(&xAxis, &yAxis, &zAxis);
+		adxl345_read_x_axis(&xAxis);
+		kxAxis = (int16_t)kalman_filter(pkfp, xAxis);
+		pidOut = pid_calc(ppid, kxAxis);
+		car_stand_control(pidOut);
 
 		TickCount = currentTickCount - lastTickCount;
-		if (TickCount > pdMS_TO_TICKS(1000)) {
+		if (TickCount > pdMS_TO_TICKS(500)) {
 			lastTickCount = currentTickCount;
 
-			usart_printf("\r\n[%d] Motors Task is running, X: %d, Y: %d, Z: %d",
-				currentTickCount / configTICK_RATE_HZ, xAxis, yAxis, zAxis);
+			usart_printf("\r\n[%d] raw:%d, kal:%d, pid:%d, PO:%d, IO:%d, DO:%d",
+				currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis, pidOut, ppid->pOut, ppid->iOut, ppid->dOut);
 		}
 
 		vTaskDelay(10);

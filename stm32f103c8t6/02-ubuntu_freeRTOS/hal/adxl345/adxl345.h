@@ -52,5 +52,11 @@ uint16_t adxl345_read_burst(uint8_t addr);
 
 void adxl345_read_xyz_axis(uint16_t *xAxis, uint16_t *yAxis, uint16_t *zAxis);
 
+void adxl345_read_x_axis(uint16_t *xAxis);
+
+void adxl345_read_y_axis(uint16_t *yAxis);
+
+void adxl345_read_z_axis(uint16_t *zAxis);
+
 #endif      /* __ADXL345_H__ */
 

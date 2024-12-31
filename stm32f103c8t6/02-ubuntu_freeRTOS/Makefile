@@ -48,6 +48,9 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./drivers/pwm \
 	   -I./drivers/spi \
 	   -I./hal/adxl345 \
+	   -I./hal/kalman \
+	   -I./hal/pid \
+	   -I./hal/car \
 	   -I./include/mini_printf \
 	   -I./include/ring_buffer \
 	   -I./include/cmd_line/lib/include \
@@ -95,6 +98,9 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/pwm/pwm.c \
 	   drivers/spi/spi.c \
 	   hal/adxl345/adxl345.c \
+	   hal/kalman/kalman.c \
+	   hal/pid/pid.c \
+	   hal/car/car.c \
 	   include/mini_printf/mini_printf.c \
 	   include/ring_buffer/ring_buffer.c \
 	   include/cmd_line/lib/src/embedded_cli.c \

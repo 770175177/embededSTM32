@@ -93,15 +93,26 @@ uint16_t adxl345_read_burst(uint8_t addr)
 }
 
 void adxl345_read_xyz_axis(uint16_t *xAxis, uint16_t *yAxis, uint16_t *zAxis)
-{ 
-	uint16_t xAxisH, yAxisH, zAxisH;
-
+{
 	*xAxis = adxl345_read_burst(ADXL_DAT_X0);
 	*yAxis = adxl345_read_burst(ADXL_DAT_Y0);
 	*zAxis = adxl345_read_burst(ADXL_DAT_Z0);
 }
 
+void adxl345_read_x_axis(uint16_t *xAxis)
+{
+	*xAxis = adxl345_read_burst(ADXL_DAT_X0);
+}
 
+void adxl345_read_y_axis(uint16_t *yAxis)
+{
+	*yAxis = adxl345_read_burst(ADXL_DAT_Y0);
+}
+
+void adxl345_read_z_axis(uint16_t *zAxis)
+{
+	*zAxis = adxl345_read_burst(ADXL_DAT_Z0);
+}
 
 
 
