@@ -73,7 +73,7 @@ static int8_t prvGetNumberOfParameters( const char * pcCommandString );
 static const CLI_Command_Definition_t xHelpCommand =
 {
     "help",
-    "\r\nhelp:\r\n Lists all the registered commands\r\n\r\n",
+    "help:\r\n\tLists all the registered commands\r\n",
     prvHelpCommand,
     0
 };

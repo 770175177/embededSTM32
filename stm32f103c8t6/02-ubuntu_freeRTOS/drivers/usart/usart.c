@@ -6,6 +6,8 @@
 #include "semphr.h"
 #endif
 
+#define USART_PUTS_MAX_MUTEX_WAIT          pdMS_TO_TICKS( 300 )
+
 static u8 USART_RX_BUF[USART_REC_LEN];
 ring_buffer_t usart_rb;
 static SemaphoreHandle_t print_mutex;  // 互斥锁句柄
@@ -66,13 +68,25 @@ int usart_printf(const char *fmt, ...)
 	ret = vsnprintf(mini_buff, USART_PRINT_LEN, fmt, va);
 	va_end(va);
 
-	xSemaphoreTake(print_mutex, portMAX_DELAY);
+	usart_puts_mutex_take();
 	ret = usart_puts(mini_buff);
-	xSemaphoreGive(print_mutex);
+	usart_puts_mutex_give();
 
 	return ret;
 }
 
+int usart_puts_mutex_take(void)
+{
+	if (pdPASS == xSemaphoreTake(print_mutex, USART_PUTS_MAX_MUTEX_WAIT))
+		return 1;
+	else
+		return 0;
+}
+
+void usart_puts_mutex_give(void)
+{
+	xSemaphoreGive(print_mutex);
+}
   
 void usart1_init(u32 bound)
 {

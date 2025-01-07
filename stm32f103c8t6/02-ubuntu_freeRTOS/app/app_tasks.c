@@ -20,7 +20,7 @@
 
 /* Const messages output by the command console. */
 static const char * const pcWelcomeMessage = "FreeRTOS Command Server.\r\nType Help to view a list of registered commands.\r\n\r\n>";
-static const char * const pcEndOfOutputMessage = "\r\n[Press ENTER to execute the previous command again]\r\n>";
+static const char * const pcEndOfOutputMessage = "\r\n\r\n[Press ENTER to execute the previous command again]\r\n>";
 static const char * const pcNewLine = "\r\n";
 
 void task_main(void *pvParameters)
@@ -41,7 +41,7 @@ void task_main(void *pvParameters)
     pcOutputString = FreeRTOS_CLIGetOutputBuffer();
 
 	/* Send the welcome message. */
-    usart_printf( ( signed char * ) pcWelcomeMessage, ( unsigned short ) strlen( pcWelcomeMessage ) );
+    usart_printf((signed char *)pcWelcomeMessage);
 
 	taskENTER_CRITICAL();
 	create_subtasks();
@@ -61,6 +61,8 @@ void task_main(void *pvParameters)
 		}
 
 		if (usart_getc(&cRxedChar)) {
+			/* Ensure exclusive access to the UART Tx. */
+			usart_puts_mutex_take();
 			/* Echo the character back. */
             usart_putc(cRxedChar);
 			/* Was it the end of the line? */
@@ -72,7 +74,7 @@ void task_main(void *pvParameters)
                  * is to be executed again. */
                 if(ucInputIndex == 0) {
                     /* Copy the last command back into the input string. */
-                    strcpy(cInputString, cLastInputString);
+                    strncpy(cInputString, cLastInputString, cmdMAX_INPUT_SIZE);
                 }
 
                 /* Pass the received command to the command interpreter.  The
@@ -91,7 +93,7 @@ void task_main(void *pvParameters)
                  * sent.  Clear the input string ready to receive the next command.
                  * Remember the command that was just processed first in case it is
                  * to be processed again. */
-                strcpy(cLastInputString, cInputString);
+                strncpy(cLastInputString, cInputString, cmdMAX_INPUT_SIZE);
                 ucInputIndex = 0;
                 memset(cInputString, 0x00, cmdMAX_INPUT_SIZE);
 
@@ -118,6 +120,8 @@ void task_main(void *pvParameters)
                     }
                 }
 			}
+			/* Must ensure to give the mutex back. */
+			usart_puts_mutex_give();
         }
 
 		vTaskDelay(10);

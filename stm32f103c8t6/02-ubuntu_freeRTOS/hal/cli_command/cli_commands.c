@@ -49,7 +49,7 @@
 #endif
 
 #ifndef configINCLUDE_QUERY_HEAP_COMMAND
-    #define configINCLUDE_QUERY_HEAP_COMMAND    0
+    #define configINCLUDE_QUERY_HEAP_COMMAND    1
 #endif
 
 /*
@@ -110,7 +110,7 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
 static const CLI_Command_Definition_t xTaskStats =
 {
     "task-stats",        /* The command string to type. */
-    "\r\ntask-stats:\r\n Displays a table showing the state of each FreeRTOS task\r\n",
+    "\r\ntask-stats:\r\n\tDisplays a table showing the state of each FreeRTOS task\r\n",
     prvTaskStatsCommand, /* The function to run. */
     0                    /* No parameters are expected. */
 };
@@ -121,7 +121,7 @@ static const CLI_Command_Definition_t xTaskStats =
 static const CLI_Command_Definition_t xThreeParameterEcho =
 {
     "echo-3-parameters",
-    "\r\necho-3-parameters <param1> <param2> <param3>:\r\n Expects three parameters, echos each in turn\r\n",
+    "\r\necho-3-parameters <param1> <param2> <param3>:\r\n\tExpects three parameters, echos each in turn\r\n",
     prvThreeParameterEchoCommand, /* The function to run. */
     3                             /* Three parameters are expected, which can take any value. */
 };
@@ -132,7 +132,7 @@ static const CLI_Command_Definition_t xThreeParameterEcho =
 static const CLI_Command_Definition_t xParameterEcho =
 {
     "echo-parameters",
-    "\r\necho-parameters <...>:\r\n Take variable number of parameters, echos each in turn\r\n",
+    "\r\necho-parameters <...>:\r\n\tTake variable number of parameters, echos each in turn\r\n",
     prvParameterEchoCommand, /* The function to run. */
     -1                       /* The user can enter any number of commands. */
 };
@@ -207,7 +207,7 @@ static BaseType_t prvTaskStatsCommand( char * pcWriteBuffer,
                                        size_t xWriteBufferLen,
                                        const char * pcCommandString )
 {
-    const char * const pcHeader = "     State   Priority  Stack    #\r\n************************************************\r\n";
+    const char * const pcHeader = " State   Priority  Stack   #\r\n************************************************\r\n";
     BaseType_t xSpacePadding;
 
     /* Remove compile time warnings about unused parameters, and check the
