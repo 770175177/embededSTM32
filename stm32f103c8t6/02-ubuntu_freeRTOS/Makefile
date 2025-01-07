@@ -2,7 +2,7 @@ TARGET	:= demo
 OUT_DIR	:= out
 
 REMOTE_USER	:= heng
-REMOTE_IP	:= 192.168.0.101
+REMOTE_IP	:= 192.168.0.107
 REMOTE_PASSWD	:= 770175177
 REMOTE_DIR	:= /home/heng/workspace/stm32/
 REMOTE_DNSCRIPT	:= download_script.jlink 
@@ -23,7 +23,7 @@ CFLAGS	:= -g \
 	   -fdata-sections \
 	   -mcpu=cortex-m3 \
 	   -mthumb \
-	   -nostartfiles
+	   -nostartfiles \
 
 LDFLAGS	:= -Wl,--gc-sections \
 
@@ -39,6 +39,7 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./freeRTOS/config \
 	   -I./freeRTOS/inc \
 	   -I./freeRTOS/portable/GCC/ARM_CM3 \
+	   -I./freeRTOS/plus/FreeRTOS-Plus-CLI/ \
 	   -I./include \
 	   -I./drivers/config \
 	   -I./drivers/delay \
@@ -51,9 +52,11 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./hal/kalman \
 	   -I./hal/pid \
 	   -I./hal/car \
-	   -I./include/mini_printf \
-	   -I./include/ring_buffer \
-	   -I./include/cmd_line/lib/include \
+	   -I./hal/cli_command \
+	   -I./hal/mini_printf \
+	   -I./hal/ring_buffer \
+	   -I./hal/cmd_line \
+	   -I./hal/RTT_printf/RTT \
 	   -I./app
 
 SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
@@ -90,6 +93,7 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   freeRTOS/src/stream_buffer.c \
 	   freeRTOS/src/tasks.c \
 	   freeRTOS/src/timers.c \
+	   freeRTOS/plus/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c \
 	   drivers/config/stm32f10x_it.c \
 	   drivers/delay/delay.c \
 	   drivers/led/led.c \
@@ -101,12 +105,11 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   hal/kalman/kalman.c \
 	   hal/pid/pid.c \
 	   hal/car/car.c \
-	   include/mini_printf/mini_printf.c \
-	   include/ring_buffer/ring_buffer.c \
-	   include/cmd_line/lib/src/embedded_cli.c \
+	   hal/cli_command/cli_commands.c \
+	   hal/mini_printf/mini_printf.c \
+	   hal/ring_buffer/ring_buffer.c \
 	   app/app_tasks.c \
 	   app/app_init.c \
-	   app/app_cmd.c \
 	   app/main.c
 
 OBJS	:= $(patsubst %.c,%.o,$(patsubst %.s,%.o,$(SRCS)))

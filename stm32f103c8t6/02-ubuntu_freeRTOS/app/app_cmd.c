@@ -82,7 +82,7 @@ void embeddedCliLoop(void)
     if (cli == NULL)
         return;
 
-    while (c = usart_getc()) {
+    while (usart_getc(&c)) {
         embeddedCliReceiveChar(cli, c);
     }
 

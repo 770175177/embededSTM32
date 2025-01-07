@@ -40,14 +40,20 @@ int usart_gets(char* s)
 	return 0;
 }
 
-char usart_getc(void)
+int usart_getc(char *c)
 {
-	char data;
-
-	if (ring_buffer_dequeue(&usart_rb, &data))
-		return data;
+	if (ring_buffer_dequeue(&usart_rb, c))
+		return 1;
 	else
 		return 0;
+}
+
+int usart_putc(char c)
+{
+	while((USART1->SR & 0X40)==0);
+	USART1->DR = (unsigned char)c;
+
+	return 1;
 }
 
 int usart_printf(const char *fmt, ...)
@@ -57,7 +63,7 @@ int usart_printf(const char *fmt, ...)
 	va_list va;
 
 	va_start(va, fmt);
-	ret = mini_vsnprintf(mini_buff, USART_PRINT_LEN, fmt, va);
+	ret = vsnprintf(mini_buff, USART_PRINT_LEN, fmt, va);
 	va_end(va);
 
 	xSemaphoreTake(print_mutex, portMAX_DELAY);
@@ -68,7 +74,7 @@ int usart_printf(const char *fmt, ...)
 }
 
   
-void uart_init(u32 bound)
+void usart1_init(u32 bound)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
@@ -104,6 +110,11 @@ void uart_init(u32 bound)
 	USART_Init(USART1, &USART_InitStructure);
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	USART_Cmd(USART1, ENABLE);
+}
+
+void uart_init(u32 bound)
+{
+	usart1_init(bound);
 
 	ring_buffer_init(&usart_rb, USART_RX_BUF, sizeof(USART_RX_BUF));
 	print_mutex = xSemaphoreCreateMutex();

@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include "usart.h"
 
 #pragma import(__use_no_semihosting)                           
 struct __FILE  { 
@@ -13,9 +15,10 @@ typedef int pid_t;
 FILE __stdout;
 
 int fputc(int ch, FILE *f)
-{      
-	while((USART1->SR&0X40)==0);  
-    USART1->DR = (u8) ch;      
+{
+	while((USART1->SR & 0X40) == 0);
+    USART1->DR = (u8) ch;
+
 	return ch;
 }
 

@@ -14,7 +14,7 @@ int8_t adxl345_init()
 	spi1_init();
 
 	if (ADXL345_DEVICEID != (devid = adxl345_read(ADXL_DEVICEID))) {
-		ADXL345_PRINT("\r\nRead ADXL345 device id 0x%x error!", devid);
+		ADXL345_PRINT("Read ADXL345 device id 0x%x error!\r\n", devid);
 		return -1;
 	}
 
@@ -27,7 +27,7 @@ int8_t adxl345_init()
 	adxl345_write(ADXL_OFFSY, 10);
 	adxl345_write(ADXL_OFFSZ, -20);
 
-	ADXL345_PRINT("\r\nADXL345 init success, device id is 0x%x", devid);
+	ADXL345_PRINT("ADXL345 init success, device id is 0x%x\r\n", devid);
 
 	return 0;
 }
@@ -39,7 +39,7 @@ int8_t adxl345_write_read_bytes(u8 txrx_data[], uint8_t length)
 
 	for (i = 0; i < length; i++) {
 		if (ret = spi1_write_read_byte(txrx_data[i], &recv_data)) {
-			ADXL345_PRINT("\r\nWrite(-1) or Read(-2) data error, ret %d", ret);
+			ADXL345_PRINT("Write(-1) or Read(-2) data error, ret %d\r\n", ret);
 			return -1;
 		}
 		if (0 != i)

@@ -16,10 +16,10 @@ void app_init(void)
     led_init();       		// PC13
 	tim4_pwm_init(PWM4_PER_MAX);
 
-	usart_printf("\r\n");
-	usart_printf("\r\n##################################");
-	usart_printf("\r\n##                              ##");
-	usart_printf("\r\n##      My FreeRTOS Project     ##");
-	usart_printf("\r\n##################################");
-	usart_printf("\r\nHardware Init Ok!");
+	usart_printf("\r\n\r\n");
+	usart_printf("##################################\r\n");
+	usart_printf("##                              ##\r\n");
+	usart_printf("##      My FreeRTOS Project     ##\r\n");
+	usart_printf("##################################\r\n");
+	usart_printf("Hardware Init Ok!\r\n");
 }

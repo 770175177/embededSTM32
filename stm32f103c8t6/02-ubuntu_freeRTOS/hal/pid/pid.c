@@ -1,7 +1,7 @@
 #include "pid.h"
 #include <math.h>
 
-void pid_init(pid_t *ppid, int target, int iValid, int iOutLimit, int pidMax)
+void pid_init(pid_calc_t *ppid, int target, int iValid, int iOutLimit, int pidMax)
 {
     ppid->Kp     = 0.1f;                // 比例
     ppid->Ki     = 0.0f;                // 积分
@@ -19,7 +19,7 @@ void pid_init(pid_t *ppid, int target, int iValid, int iOutLimit, int pidMax)
     ppid->pidOutMax      = pidMax;      // PID整体输出限幅
 }
 
-void pid_set_param(pid_t *ppid, float Kp, float Ki, float Kd)
+void pid_set_param(pid_calc_t *ppid, float Kp, float Ki, float Kd)
 {
     ppid->Kp = Kp;
     ppid->Ki = Ki;
@@ -36,7 +36,7 @@ void pid_limit(int *key, int max)
         *key = -maxAbs;
 }
 
-int pid_calc(pid_t *ppid, int current)
+int pid_calc(pid_calc_t *ppid, int current)
 {
     ppid->current = current;
 

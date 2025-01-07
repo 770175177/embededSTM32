@@ -1,5 +1,5 @@
-#ifndef __PID_H__
-#define __PID_H__
+#ifndef __PID_CALC_H__
+#define __PID_CALC_H__
 #include "stm32f10x.h"
 
 typedef struct
@@ -22,11 +22,11 @@ typedef struct
     int integralValid;
     int integralLimit;
     int pidOutMax;
-} pid_t, *ppid_t;
+} pid_calc_t, *ppid_calc_t;
 
-void pid_init(pid_t *ppid, int target, int iValid, int iOutLimit, int pidMax);
-void pid_set_param(pid_t *ppid, float Kp, float Ki, float Kd);
+void pid_init(pid_calc_t *ppid, int target, int iValid, int iOutLimit, int pidMax);
+void pid_set_param(pid_calc_t *ppid, float Kp, float Ki, float Kd);
 void pid_limit(int *key, int max);
-int pid_calc(pid_t *ppid, int NextPoint);
+int pid_calc(pid_calc_t *ppid, int NextPoint);
 
-#endif
+#endif  /* end __PID_CALC_H__ */

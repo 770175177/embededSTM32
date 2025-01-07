@@ -65,6 +65,8 @@ extern uint32_t SystemCoreClock;
 #define vAssertCalled(char,int)     usart_printf("Error: %s,%d\r\n",char,int)
 #define configASSERT(x) if((x)==0)  vAssertCalled(__FILE__,__LINE__)
 
+#define configCOMMAND_INT_MAX_OUTPUT_SIZE				512
+
 /******************************************************************************/
 /* Hardware description related definitions. **********************************/
 /******************************************************************************/
@@ -393,14 +395,14 @@ extern uint32_t SystemCoreClock;
  * are used by trace and visualisation functions and tools.  Set to 0 to exclude
  * the additional information from the structures. Defaults to 0 if left
  * undefined. */
-#define configUSE_TRACE_FACILITY                0
+#define configUSE_TRACE_FACILITY                1
 
 /* Set to 1 to include the vTaskList() and vTaskGetRunTimeStats() functions in
  * the build.  Set to 0 to exclude these functions from the build.  These two
  * functions introduce a dependency on string formatting functions that would
  * otherwise not exist - hence they are kept separate.  Defaults to 0 if left
  * undefined. */
-#define configUSE_STATS_FORMATTING_FUNCTIONS    0
+#define configUSE_STATS_FORMATTING_FUNCTIONS    1
 
 /******************************************************************************/
 /* Co-routine related definitions. ********************************************/

@@ -37,13 +37,12 @@
 #include "task.h"
 
 /* Standard includes. */
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+// #include <stdint.h>
+// #include <stdio.h>
+// #include <stdlib.h>
 #include <string.h>
-
-/* FreeRTOS+CLI includes. */
-#include "FreeRTOS_CLI.h"
+#include "mini_printf.h"
+#include "cli_commands.h"
 
 #ifndef  configINCLUDE_TRACE_RELATED_CLI_COMMANDS
     #define configINCLUDE_TRACE_RELATED_CLI_COMMANDS    0
@@ -177,7 +176,7 @@ static const CLI_Command_Definition_t xParameterEcho =
 
 /*-----------------------------------------------------------*/
 
-void vRegisterSampleCLICommands( void )
+void CLIRegisterCommands( void )
 {
     /* Register all the command line commands defined immediately above. */
     FreeRTOS_CLIRegisterCommand( &xTaskStats );
@@ -258,7 +257,7 @@ static BaseType_t prvTaskStatsCommand( char * pcWriteBuffer,
         ( void ) xWriteBufferLen;
         configASSERT( pcWriteBuffer );
 
-        sprintf( pcWriteBuffer, "Current free heap %d bytes, minimum ever free heap %d bytes\r\n", ( int ) xPortGetFreeHeapSize(), ( int ) xPortGetMinimumEverFreeHeapSize() );
+        snprintf( pcWriteBuffer, xWriteBufferLen, "Current free heap %d bytes, minimum ever free heap %d bytes\r\n", ( int ) xPortGetFreeHeapSize(), ( int ) xPortGetMinimumEverFreeHeapSize() );
 
         /* There is no more data to return after this single string, so return
          * pdFALSE. */
@@ -332,7 +331,7 @@ static BaseType_t prvThreeParameterEchoCommand( char * pcWriteBuffer,
     {
         /* The first time the function is called after the command has been
          * entered just a header string is returned. */
-        sprintf( pcWriteBuffer, "The three parameters were:\r\n" );
+        snprintf( pcWriteBuffer, xWriteBufferLen, "The three parameters were:\r\n" );
 
         /* Next time the function is called the first parameter will be echoed
          * back. */
@@ -357,9 +356,9 @@ static BaseType_t prvThreeParameterEchoCommand( char * pcWriteBuffer,
 
         /* Return the parameter string. */
         memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-        sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
-        strncat( pcWriteBuffer, pcParameter, ( size_t ) xParameterStringLength );
-        strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
+        snprintf( pcWriteBuffer, xWriteBufferLen, "%d: ", ( int ) uxParameterNumber );
+        strncat( pcWriteBuffer, pcParameter, ( size_t ) (xParameterStringLength + 1) );
+        strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) + 1 );
 
         /* If this is the last of the three parameters then there are no more
          * strings to return after this one. */
@@ -401,7 +400,7 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
     {
         /* The first time the function is called after the command has been
          * entered just a header string is returned. */
-        sprintf( pcWriteBuffer, "The parameters were:\r\n" );
+        snprintf( pcWriteBuffer, xWriteBufferLen, "The parameters were:\r\n" );
 
         /* Next time the function is called the first parameter will be echoed
          * back. */
@@ -425,9 +424,9 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
         {
             /* Return the parameter string. */
             memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-            sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
-            strncat( pcWriteBuffer, ( char * ) pcParameter, ( size_t ) xParameterStringLength );
-            strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
+            snprintf( pcWriteBuffer, xWriteBufferLen, "%d: ", ( int ) uxParameterNumber );
+            strncat( pcWriteBuffer, ( char * ) pcParameter, ( size_t ) (xParameterStringLength + 1) );
+            strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) + 1 );
 
             /* There might be more parameters to return after this one. */
             xReturn = pdTRUE;
@@ -486,17 +485,17 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
             vTraceClear();
             vTraceStart();
 
-            sprintf( pcWriteBuffer, "Trace recording (re)started.\r\n" );
+            snprintf( pcWriteBuffer, xWriteBufferLen, "Trace recording (re)started.\r\n" );
         }
         else if( strncmp( pcParameter, "stop", strlen( "stop" ) ) == 0 )
         {
             /* End the trace, if one is running. */
             vTraceStop();
-            sprintf( pcWriteBuffer, "Stopping trace recording.\r\n" );
+            snprintf( pcWriteBuffer, xWriteBufferLen, "Stopping trace recording.\r\n" );
         }
         else
         {
-            sprintf( pcWriteBuffer, "Valid parameters are 'start' and 'stop'.\r\n" );
+            snprintf( pcWriteBuffer, xWriteBufferLen, "Valid parameters are 'start' and 'stop'.\r\n" );
         }
 
         /* There is no more data to return after this single string, so return
