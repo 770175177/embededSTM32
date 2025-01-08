@@ -23,6 +23,9 @@ static const char * const pcWelcomeMessage = "FreeRTOS Command Server.\r\nType H
 static const char * const pcEndOfOutputMessage = "\r\n\r\n[Press ENTER to execute the previous command again]\r\n>";
 static const char * const pcNewLine = "\r\n";
 
+static pid_calc_t stand_pid;
+pid_calc_t *ppid = &stand_pid;
+
 void task_main(void *pvParameters)
 {
 	signed char cRxedChar;
@@ -143,14 +146,13 @@ void subtask2_motors(void *pvParameters)
 	TickType_t currentTickCount, TickCount;
 	TickType_t lastTickCount, lastTimestampCount;
 	kalman kfp, *pkfp = &kfp;
-	pid_calc_t pid, *ppid = &pid;
 	int16_t xAxis, yAxis, zAxis, kxAxis;
 	int32_t pidOut = 0;
 
 	adxl345_init();
 	kalman_init(pkfp);
 	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
-	pid_set_param(ppid, 5.0f, 0.0f, 0.0f);
+	pid_set_param(ppid, 5.5f, 0.0f, 0.0f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
@@ -168,8 +170,8 @@ void subtask2_motors(void *pvParameters)
 		if (TickCount > pdMS_TO_TICKS(500)) {
 			lastTickCount = currentTickCount;
 
-			// usart_printf("\r\n[%d] raw:%d, kal:%d, pid:%d, PO:%d, IO:%d, DO:%d",
-			// 	currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis, pidOut, ppid->pOut, ppid->iOut, ppid->dOut);	
+			usart_printf("\r\n[%d] raw:%d, kal:%d, pid:%d, PO:%d, IO:%d, DO:%d",
+				currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis, pidOut, ppid->pOut, ppid->iOut, ppid->dOut);	
 		}
 
 		vTaskDelay(10);

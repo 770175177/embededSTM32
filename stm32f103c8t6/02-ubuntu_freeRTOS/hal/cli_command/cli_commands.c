@@ -39,10 +39,11 @@
 /* Standard includes. */
 // #include <stdint.h>
 // #include <stdio.h>
-// #include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 #include "mini_printf.h"
 #include "cli_commands.h"
+#include "pid.h"
 
 #ifndef  configINCLUDE_TRACE_RELATED_CLI_COMMANDS
     #define configINCLUDE_TRACE_RELATED_CLI_COMMANDS    0
@@ -51,6 +52,10 @@
 #ifndef configINCLUDE_QUERY_HEAP_COMMAND
     #define configINCLUDE_QUERY_HEAP_COMMAND    1
 #endif
+
+#define PID_WRITE_FLAG      0xA5
+#define PID_CLEAR_FLAG      0x00
+extern pid_calc_t *ppid;
 
 /*
  * The function that registers the commands that are defined within this file.
@@ -104,6 +109,10 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
                                                 size_t xWriteBufferLen,
                                                 const char * pcCommandString );
 #endif
+
+static BaseType_t prvPidParametersOperationCommand( char * pcWriteBuffer,
+                                                    size_t xWriteBufferLen,
+                                                    const char * pcCommandString );
 
 /* Structure that defines the "task-stats" command line command.  This generates
  * a table that gives information on each task in the system. */
@@ -176,6 +185,19 @@ static const CLI_Command_Definition_t xParameterEcho =
 
 /*-----------------------------------------------------------*/
 
+/* Structure that defines the "pid-params" command line command.  This
+ * takes exactly three parameters that the command show or read or write pid
+ * parameters. */
+static const CLI_Command_Definition_t xPidParametersOps =
+{
+    "pid-params",
+    "\r\npid-params <read/write> [kp/ki/kd] [value]:\r\n\tread/write kp/ki/kd, only write support parameter\r\n",
+    prvPidParametersOperationCommand, /* The function to run. */
+    -1                                /* Three parameters are expected, which can take any value. */
+};
+
+/*-----------------------------------------------------------*/
+
 void CLIRegisterCommands( void )
 {
     /* Register all the command line commands defined immediately above. */
@@ -200,6 +222,8 @@ void CLIRegisterCommands( void )
         FreeRTOS_CLIRegisterCommand( &xStartStopTrace );
     }
     #endif
+
+    FreeRTOS_CLIRegisterCommand(&xPidParametersOps);
 }
 /*-----------------------------------------------------------*/
 
@@ -504,3 +528,111 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
     }
 
 #endif /* configINCLUDE_TRACE_RELATED_CLI_COMMANDS */
+/*-----------------------------------------------------------*/
+
+static float stringToFloat(const char *s)
+{
+    float value = 0.0f;
+    float decVal = 0.1f;
+    uint8_t dotFlag = 0;
+    char *p = (char *)s;
+
+    while(*p != '\0') {
+        if (!dotFlag && (*p >= '0') && (*p <= '9'))
+            value = (float)((value * 10) + (*p - '0'));
+        else if (!dotFlag && (*p == '.'))
+            dotFlag = 1;
+        else if (dotFlag && (*p >= '0') && (*p <= '9')) {
+            value = (float)(value + ((*p - '0') * decVal));
+            decVal *= 0.1f;
+        } else
+            break;
+        p++;
+    }
+
+    return value;
+}
+
+static BaseType_t prvPidParametersOperationCommand( char * pcWriteBuffer,
+                                                    size_t xWriteBufferLen,
+                                                    const char * pcCommandString )
+{
+    const char * pcParameter;
+    BaseType_t xParameterStringLength, xReturn;
+    static UBaseType_t uxParameterNumber = 0;
+    static uint8_t writeFlag = PID_CLEAR_FLAG;
+    static float *pPidKey = NULL;
+
+    /* Remove compile time warnings about unused parameters, and check the
+     * write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+     * write buffer length is adequate, so does not check for buffer overflows. */
+    ( void ) pcCommandString;
+    ( void ) xWriteBufferLen;
+    configASSERT( pcWriteBuffer );
+
+    if( uxParameterNumber == 0 )
+    {
+        /* Next time the function is called the first parameter will be echoed
+         * back. */
+        uxParameterNumber = 1U;
+
+        /* There is more data to be returned as no parameters have been echoed
+         * back yet. */
+        xReturn = pdPASS;
+    }
+    else
+    {
+        /* Obtain the parameter string. */
+        pcParameter = FreeRTOS_CLIGetParameter
+                      (
+            pcCommandString,        /* The command string itself. */
+            uxParameterNumber,      /* Return the next parameter. */
+            &xParameterStringLength /* Store the parameter string length. */
+                      );
+
+        if( pcParameter != NULL )
+        {
+            /* Return the parameter string. */
+            memset( pcWriteBuffer, 0x00, xWriteBufferLen );
+
+            if (!strncasecmp(pcParameter, "read", strlen("read"))) {
+                snprintf(pcWriteBuffer, xWriteBufferLen,
+                        "PID Params Show:\r\n\tKp=%d.%02d, Ki=%d.%02d, Kd=%d.%02d\r\n",
+                    (int)ppid->Kp, ((int)(ppid->Kp * 100)) % 100,
+                    (int)ppid->Ki, ((int)(ppid->Ki * 100)) % 100,
+                    (int)ppid->Kd, ((int)(ppid->Kd * 100)) % 100);
+            } else if (!strncasecmp(pcParameter, "write", strlen("write"))) {
+                writeFlag = PID_WRITE_FLAG;
+                pPidKey = NULL;
+            } else if (!strncasecmp(pcParameter, "kp", strlen("kp")) && (writeFlag & PID_WRITE_FLAG)) {
+                pPidKey = &ppid->Kp;
+            } else if (!strncasecmp(pcParameter, "ki", strlen("ki")) && (writeFlag & PID_WRITE_FLAG)) {
+                pPidKey = &ppid->Ki;
+            } else if (!strncasecmp(pcParameter, "kd", strlen("kd")) && (writeFlag & PID_WRITE_FLAG)) {
+                pPidKey = &ppid->Kd;
+            } else if (pPidKey && (writeFlag & PID_WRITE_FLAG)) {
+                *pPidKey = stringToFloat(pcParameter);
+                writeFlag = PID_CLEAR_FLAG;
+                pPidKey = NULL;
+            }
+
+            /* There might be more parameters to return after this one. */
+            xReturn = pdTRUE;
+            uxParameterNumber++;
+        }
+        else
+        {
+            /* No more parameters were found.  Make sure the write buffer does
+             * not contain a valid string. */
+            pcWriteBuffer[ 0 ] = 0x00;
+
+            /* No more data to return. */
+            xReturn = pdFALSE;
+
+            /* Start over the next time this command is executed. */
+            uxParameterNumber = 0;
+        }
+    }
+
+    return xReturn;
+}
