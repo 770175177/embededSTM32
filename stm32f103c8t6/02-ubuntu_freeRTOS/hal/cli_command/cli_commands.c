@@ -44,6 +44,7 @@
 #include "mini_printf.h"
 #include "cli_commands.h"
 #include "pid.h"
+#include "log_module.h"
 
 #ifndef  configINCLUDE_TRACE_RELATED_CLI_COMMANDS
     #define configINCLUDE_TRACE_RELATED_CLI_COMMANDS    0
@@ -111,6 +112,10 @@ static BaseType_t prvParameterEchoCommand( char * pcWriteBuffer,
 #endif
 
 static BaseType_t prvPidParametersOperationCommand( char * pcWriteBuffer,
+                                                    size_t xWriteBufferLen,
+                                                    const char * pcCommandString );
+
+static BaseType_t prvPrintLogCommand( char * pcWriteBuffer,
                                                     size_t xWriteBufferLen,
                                                     const char * pcCommandString );
 
@@ -183,17 +188,26 @@ static const CLI_Command_Definition_t xParameterEcho =
     };
 #endif /* configINCLUDE_TRACE_RELATED_CLI_COMMANDS */
 
-/*-----------------------------------------------------------*/
-
 /* Structure that defines the "pid-params" command line command.  This
  * takes exactly three parameters that the command show or read or write pid
  * parameters. */
 static const CLI_Command_Definition_t xPidParametersOps =
 {
     "pid-params",
-    "\r\npid-params <read/write> [kp/ki/kd] [value]:\r\n\tread/write kp/ki/kd, only write support parameter\r\n",
+    "\r\npid-params <read/write> <kp/ki/kd> <value>:\r\n\tread/write kp/ki/kd, only write support parameter\r\n",
     prvPidParametersOperationCommand, /* The function to run. */
     -1                                /* Three parameters are expected, which can take any value. */
+};
+
+/* Structure that defines the "print-log" command line command.  This
+ * takes exactly three parameters that the command show or read or write pid
+ * parameters. */
+static const CLI_Command_Definition_t xPrintLogModuleOps =
+{
+    "print-log",
+    "\r\nprint-log <all/task_main/task_motor/adxl345> <on/off>:\r\n\tset print log off or on\r\n",
+    prvPrintLogCommand, /* The function to run. */
+    -1                  /* Three parameters are expected, which can take any value. */
 };
 
 /*-----------------------------------------------------------*/
@@ -224,6 +238,7 @@ void CLIRegisterCommands( void )
     #endif
 
     FreeRTOS_CLIRegisterCommand(&xPidParametersOps);
+    FreeRTOS_CLIRegisterCommand(&xPrintLogModuleOps);
 }
 /*-----------------------------------------------------------*/
 
@@ -569,6 +584,8 @@ static BaseType_t prvPidParametersOperationCommand( char * pcWriteBuffer,
     ( void ) pcCommandString;
     ( void ) xWriteBufferLen;
     configASSERT( pcWriteBuffer );
+    /* Return the parameter string. */
+    memset( pcWriteBuffer, 0x00, xWriteBufferLen );
 
     if( uxParameterNumber == 0 )
     {
@@ -592,9 +609,6 @@ static BaseType_t prvPidParametersOperationCommand( char * pcWriteBuffer,
 
         if( pcParameter != NULL )
         {
-            /* Return the parameter string. */
-            memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-
             if (!strncasecmp(pcParameter, "read", strlen("read"))) {
                 snprintf(pcWriteBuffer, xWriteBufferLen,
                         "PID Params Show:\r\n\tKp=%d.%02d, Ki=%d.%02d, Kd=%d.%02d\r\n",
@@ -636,3 +650,93 @@ static BaseType_t prvPidParametersOperationCommand( char * pcWriteBuffer,
 
     return xReturn;
 }
+/*-----------------------------------------------------------*/
+
+static BaseType_t prvPrintLogCommand( char * pcWriteBuffer,
+                                                size_t xWriteBufferLen,
+                                                const char * pcCommandString )
+{
+    const char *pcParameter;
+    BaseType_t xParameterStringLength, xReturn;
+    static UBaseType_t uxParameterNumber = 0;
+    static portSTACK_TYPE moduleSelect = 0;
+    const char *pPcParameter = NULL;
+    portCHAR i;
+
+    /* Remove compile time warnings about unused parameters, and check the
+     * write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+     * write buffer length is adequate, so does not check for buffer overflows. */
+    ( void ) pcCommandString;
+    ( void ) xWriteBufferLen;
+    configASSERT( pcWriteBuffer );
+    /* Return the parameter string. */
+    memset( pcWriteBuffer, 0x00, xWriteBufferLen );
+
+    if( uxParameterNumber == 0 )
+    {
+        /* Next time the function is called the first parameter will be echoed
+         * back. */
+        uxParameterNumber = 1U;
+
+        /* There is more data to be returned as no parameters have been echoed
+         * back yet. */
+        xReturn = pdPASS;
+    }
+    else
+    {
+        /* Obtain the parameter string. */
+        pcParameter = FreeRTOS_CLIGetParameter
+                      (
+            pcCommandString,        /* The command string itself. */
+            uxParameterNumber,      /* Return the next parameter. */
+            &xParameterStringLength /* Store the parameter string length. */
+                      );
+
+        if (moduleSelect) {
+            if (!pcParameter) {     /* show module status */
+                snprintf(pcWriteBuffer, xWriteBufferLen, "Status Of Module:\r\n\t%s: %s\r\n",
+                        pPcParameter, (moduleSelect & print_flag) ? "ON" : "OFF");
+            } else if(!strncasecmp(pcParameter, "on", strlen("on"))) {
+                print_flag |= moduleSelect;
+            } else if (!strncasecmp(pcParameter, "off", strlen("off"))) {
+                print_flag &= ~moduleSelect;
+            }
+            moduleSelect = 0x0;
+        }
+
+        if (!strncasecmp(pcParameter, "all", strlen("all"))) {
+            moduleSelect = PRINT_MODULE_ALL;
+            pPcParameter = pcParameter;
+        } else if (!strncasecmp(pcParameter, "task_main", strlen("task_main"))) {
+            moduleSelect = PRINT_MODULE_TASK_MAIN;
+            pPcParameter = pcParameter;
+        } else if (!strncasecmp(pcParameter, "task_motor", strlen("task_motor"))) {
+            moduleSelect = PRINT_MODULE_TASK_MOTOR;
+            pPcParameter = pcParameter;
+        } else if (!strncasecmp(pcParameter, "adxl345", strlen("adxl345"))) {
+            moduleSelect = PRINT_MODULE_ADXL345;
+            pPcParameter = pcParameter;
+        } else {
+            moduleSelect = 0x0;
+        }
+
+        /* If this is the last of the three parameters then there are no more
+         * strings to return after this one. */
+        if( uxParameterNumber == 2U )
+        {
+            /* If this is the last of the three parameters then there are no more
+             * strings to return after this one. */
+            xReturn = pdFALSE;
+            uxParameterNumber = 0;
+        }
+        else
+        {
+            /* There are more parameters to return after this one. */
+            xReturn = pdTRUE;
+            uxParameterNumber++;
+        }
+    }
+
+    return xReturn;
+}
+

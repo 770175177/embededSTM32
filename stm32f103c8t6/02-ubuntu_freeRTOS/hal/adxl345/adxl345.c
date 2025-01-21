@@ -1,11 +1,6 @@
 #include "adxl345.h"
 #include "usart.h"
-
-#ifdef DEBUG_ADXL345
-	#define	ADXL345_PRINT(...)	usart_printf(__VA_ARGS__)
-#else
-	#define	ADXL345_PRINT(...)
-#endif
+#include "log_module.h"
 
 int8_t adxl345_init()
 {
@@ -23,7 +18,7 @@ int8_t adxl345_init()
 	adxl345_write(ADXL_BW_RATE, 0x0F);			// 100Hz
 	adxl345_write(ADXL_INT_ENABLE, 0x00);		// data ready interrupt
 
-	adxl345_write(ADXL_OFFSX, 5);
+	adxl345_write(ADXL_OFFSX, 2);
 	adxl345_write(ADXL_OFFSY, 10);
 	adxl345_write(ADXL_OFFSZ, -20);
 

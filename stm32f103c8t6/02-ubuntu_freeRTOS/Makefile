@@ -44,6 +44,7 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./drivers/config \
 	   -I./drivers/delay \
 	   -I./drivers/led \
+	   -I./drivers/key \
 	   -I./drivers/sys \
 	   -I./drivers/usart \
 	   -I./drivers/pwm \
@@ -97,6 +98,7 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/config/stm32f10x_it.c \
 	   drivers/delay/delay.c \
 	   drivers/led/led.c \
+	   drivers/key/key.c \
 	   drivers/sys/sys.c \
 	   drivers/usart/usart.c \
 	   drivers/pwm/pwm.c \

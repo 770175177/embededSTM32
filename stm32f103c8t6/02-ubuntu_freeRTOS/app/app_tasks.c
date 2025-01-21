@@ -2,6 +2,7 @@
 #include "delay.h"
 #include "misc.h"
 #include "led.h"
+#include "key.h"
 #include "usart.h"
 #include "pwm.h"
 #include "adxl345.h"
@@ -10,6 +11,7 @@
 #include "car.h"
 #include "app_tasks.h"
 #include "cli_commands.h"
+#include "log_module.h"
 #include <string.h>
 
 /* Dimensions the buffer into which input characters are placed. */
@@ -19,9 +21,9 @@
 #define cmdASCII_DEL               (0x7F)
 
 /* Const messages output by the command console. */
-static const char * const pcWelcomeMessage = "FreeRTOS Command Server.\r\nType Help to view a list of registered commands.\r\n\r\n>";
-static const char * const pcEndOfOutputMessage = "\r\n\r\n[Press ENTER to execute the previous command again]\r\n>";
-static const char * const pcNewLine = "\r\n";
+static const char *const pcWelcomeMessage = "FreeRTOS Command Server.\r\nType Help to view a list of registered commands.\r\n\r\n>";
+static const char *const pcEndOfOutputMessage = "\r\n\r\n[Press ENTER to execute the previous command again]\r\n>";
+static const char *const pcNewLine = "\r\n";
 
 static pid_calc_t stand_pid;
 pid_calc_t *ppid = &stand_pid;
@@ -127,7 +129,7 @@ void task_main(void *pvParameters)
 			usart_puts_mutex_give();
         }
 
-		vTaskDelay(10);
+		vTaskDelay(5);
 	}
 }
 
@@ -148,11 +150,13 @@ void subtask2_motors(void *pvParameters)
 	kalman kfp, *pkfp = &kfp;
 	int16_t xAxis, yAxis, zAxis, kxAxis;
 	int32_t pidOut = 0;
+	uint8_t keyValue = KEY_INVALID;
 
+	key_init();
 	adxl345_init();
 	kalman_init(pkfp);
 	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
-	pid_set_param(ppid, 5.5f, 0.0f, 0.0f);
+	pid_set_param(ppid, 15.0f, 0.01f, 0.0f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
@@ -170,8 +174,27 @@ void subtask2_motors(void *pvParameters)
 		if (TickCount > pdMS_TO_TICKS(500)) {
 			lastTickCount = currentTickCount;
 
-			usart_printf("\r\n[%d] raw:%d, kal:%d, pid:%d, PO:%d, IO:%d, DO:%d",
-				currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis, pidOut, ppid->pOut, ppid->iOut, ppid->dOut);	
+			TASK_MOTOR_PRINT("[%d] r%d k%d (p%d.%d i%d.%d d%d.%d) O:%d P:%d I:%d D:%d\r\n",
+				currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis,
+				((uint32_t)(ppid->Kp*100))/100, ((uint32_t)(ppid->Kp*100))%100,
+				((uint32_t)(ppid->Ki*100))/100, ((uint32_t)(ppid->Ki*100))%100,
+				((uint32_t)(ppid->Kd*100))/100, ((uint32_t)(ppid->Kd*100))%100,
+				ppid->pidOut, ppid->pOut, ppid->iOut, ppid->dOut);
+		}
+
+		if (keyValue = key_scan()) {
+			switch(keyValue) {
+				case KEY0_DOWN:
+					// ppid->Kp -= 2.0;
+					ppid->Ki -= 0.01;
+					break;
+				case KEY1_UP:
+					// ppid->Kp += 2.0;
+					ppid->Ki += 0.01;
+					break;
+				default:
+					break;
+			}
 		}
 
 		vTaskDelay(10);
