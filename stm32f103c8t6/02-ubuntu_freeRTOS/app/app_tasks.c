@@ -156,7 +156,7 @@ void subtask2_motors(void *pvParameters)
 	adxl345_init();
 	kalman_init(pkfp);
 	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
-	pid_set_param(ppid, 15.0f, 0.01f, 0.0f);
+	pid_set_param(ppid, 23.5f, 0.11f, 0.01f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
@@ -185,12 +185,12 @@ void subtask2_motors(void *pvParameters)
 		if (keyValue = key_scan()) {
 			switch(keyValue) {
 				case KEY0_DOWN:
-					// ppid->Kp -= 2.0;
-					ppid->Ki -= 0.01;
+					ppid->Kp -= 2.0;
+					// ppid->Ki -= 0.01;
 					break;
 				case KEY1_UP:
-					// ppid->Kp += 2.0;
-					ppid->Ki += 0.01;
+					ppid->Kp += 2.0;
+					// ppid->Ki += 0.01;
 					break;
 				default:
 					break;

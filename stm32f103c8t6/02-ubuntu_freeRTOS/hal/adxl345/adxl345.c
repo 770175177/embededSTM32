@@ -18,7 +18,7 @@ int8_t adxl345_init()
 	adxl345_write(ADXL_BW_RATE, 0x0F);			// 100Hz
 	adxl345_write(ADXL_INT_ENABLE, 0x00);		// data ready interrupt
 
-	adxl345_write(ADXL_OFFSX, 2);
+	adxl345_write(ADXL_OFFSX, -1);
 	adxl345_write(ADXL_OFFSY, 10);
 	adxl345_write(ADXL_OFFSZ, -20);
 
