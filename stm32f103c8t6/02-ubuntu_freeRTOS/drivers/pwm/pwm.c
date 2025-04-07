@@ -9,19 +9,22 @@ void tim4_pwm_init(u16 period)
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
- 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB , ENABLE);	// 使能GPIO时钟                                                    	
+ 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB , ENABLE);	// 使能GPIO时钟
 
-	// 引脚服用为输出功能，输出TIM4 CH1/CH2/CH3/CH4的 PWM 脉冲波形
+	// 引脚设置为输出功能，输出 L298N IN1/IN2/IN3/IN4 信号
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;		// 推挽输出
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin = L298N_IN1_PIN | L298N_IN2_PIN | \
+								  L298N_IN3_PIN | L298N_IN4_PIN;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	// 引脚复用为输出功能，输出TIM4 CH1/CH2的 PWM 脉冲波形
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;			// 复用推挽输出
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
 	GPIO_InitStructure.GPIO_Pin = PWM4_CH1_PIN;				// TIM_CH1
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	GPIO_InitStructure.GPIO_Pin = PWM4_CH2_PIN;				// TIM_CH2
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_InitStructure.GPIO_Pin = PWM4_CH3_PIN;				// TIM_CH3
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_InitStructure.GPIO_Pin = PWM4_CH4_PIN;				// TIM_CH4
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	TIM_TimeBaseStructure.TIM_Period = period;					// 设置自动重装值 80K
@@ -36,18 +39,12 @@ void tim4_pwm_init(u16 period)
 	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;	  // 输出极性：Low
 	TIM_OC1Init(TIM4, &TIM_OCInitStructure);				// 初始化TIM1 CH1
 	TIM_OC2Init(TIM4, &TIM_OCInitStructure);				// 初始化TIM1 CH2
-	TIM_OC3Init(TIM4, &TIM_OCInitStructure);				// 初始化TIM1 CH3
-	TIM_OC4Init(TIM4, &TIM_OCInitStructure);				// 初始化TIM1 CH4
 
 	TIM_CtrlPWMOutputs(TIM4, ENABLE);						// MOE使能
 	TIM_SetCompare1(TIM4, 0);
 	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH1预装载使能
 	TIM_SetCompare2(TIM4, 0);
 	TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH2预装载使能
-	TIM_SetCompare3(TIM4, 0);
-	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH3预装载使能
-	TIM_SetCompare4(TIM4, 0);
-	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);		// CH4预装载使能
 	TIM_ARRPreloadConfig(TIM4, ENABLE);						// 使能TIM1在ARR上的预装载寄存器
 	TIM_Cmd(TIM4, ENABLE);									// 使能TIM1
 }
@@ -65,14 +62,15 @@ void tim4_pwm_set_duty(PWM4_CHANNEL ch, u16 duty)
     	case PWM4_CH2:
 			TIM_SetCompare2(TIM4, duty);
 			break;
-    	case PWM4_CH3:
-			TIM_SetCompare3(TIM4, duty);
-			break;
-    	case PWM4_CH4:
-			TIM_SetCompare4(TIM4, duty);
-			break;
 		default:
 			break;
 	}
 }
 
+void l298n_set_state(uint16_t gpio, L298N_STATUS stat)
+{
+	if (stat == L298N_ENABLE)
+		GPIO_SetBits(GPIOB, gpio);
+	else if (stat == L298N_DISABLE)
+		GPIO_ResetBits(GPIOB, gpio);
+}

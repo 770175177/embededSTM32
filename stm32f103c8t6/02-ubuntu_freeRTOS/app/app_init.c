@@ -4,6 +4,7 @@
 #include "led.h"
 #include "usart.h"
 #include "pwm.h"
+#include "soft_i2c.h"
 #include "app_init.h"
 #include "log_module.h"
 
@@ -16,16 +17,17 @@ void app_init(void)
 
 	uart_init(115200);
     delay_init();
+	i2c_init();
     led_init();       		// PC13
 	
 	tim4_pwm_init(PWM4_PER_MAX);
 
-	print_flag = PRINT_MODULE_TASK_MOTOR;
+	// print_flag = PRINT_MODULE_TASK_MOTOR;
 
-	usart_printf("\r\n\r\n");
-	usart_printf("##################################\r\n");
-	usart_printf("##                              ##\r\n");
-	usart_printf("##      My FreeRTOS Project     ##\r\n");
-	usart_printf("##################################\r\n");
-	usart_printf("Hardware Init Ok!\r\n");
+	usart_printf("\n\r\n\r");
+	usart_printf("##################################\n\r");
+	usart_printf("##                              ##\n\r");
+	usart_printf("##      My FreeRTOS Project     ##\n\r");
+	usart_printf("##################################\n\r");
+	usart_printf("Hardware Init Ok!\n\r");
 }

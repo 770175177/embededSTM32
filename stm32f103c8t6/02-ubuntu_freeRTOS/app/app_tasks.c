@@ -9,6 +9,7 @@
 #include "kalman.h"
 #include "pid.h"
 #include "car.h"
+#include "soft_i2c.h"
 #include "app_tasks.h"
 #include "cli_commands.h"
 #include "log_module.h"
@@ -66,6 +67,7 @@ void task_main(void *pvParameters)
 		}
 
 		if (usart_getc(&cRxedChar)) {
+		// if (0) {
 			/* Ensure exclusive access to the UART Tx. */
 			usart_puts_mutex_take();
 			/* Echo the character back. */
@@ -133,9 +135,18 @@ void task_main(void *pvParameters)
 	}
 }
 
+#define OLED_I2C_ADDR		(0x78)
+#define OLED_I2C_WRITE_ADDR	(OLED_I2C_ADDR & 0xFE)
+#define OLED_I2C_READ_ADDR	(OLED_I2C_ADDR | 0x1)
+
 void subtask1_sensors(void *pvParameters)
 {
-	usart_printf("Sensors Task Create\r\n");
+	uint8_t ret = 0;
+	uint8_t data[2] = {OLED_I2C_ADDR, 0x00};
+
+	ret = i2c_transfer(1, 1, data);
+
+	usart_printf("Sensors Task Create, ret %d, data %x %x\r\n", ret, data[0], data[1]);
 
 	while(1) {
 
@@ -156,7 +167,7 @@ void subtask2_motors(void *pvParameters)
 	adxl345_init();
 	kalman_init(pkfp);
 	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
-	pid_set_param(ppid, 23.5f, 0.11f, 0.01f);
+	pid_set_param(ppid, 9.5f, 0.0f, 0.00f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;

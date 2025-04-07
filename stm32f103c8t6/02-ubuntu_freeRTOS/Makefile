@@ -49,6 +49,7 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./drivers/usart \
 	   -I./drivers/pwm \
 	   -I./drivers/spi \
+	   -I./drivers/i2c \
 	   -I./hal/adxl345 \
 	   -I./hal/kalman \
 	   -I./hal/pid \
@@ -103,6 +104,7 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   drivers/usart/usart.c \
 	   drivers/pwm/pwm.c \
 	   drivers/spi/spi.c \
+	   drivers/i2c/soft_i2c.c \
 	   hal/adxl345/adxl345.c \
 	   hal/kalman/kalman.c \
 	   hal/pid/pid.c \
@@ -174,6 +176,9 @@ flash: dnload
 		expect \"password:\"; \
 		send \"$(REMOTE_PASSWD)\r\"; \
 		interact"
+
+remote:
+	sshpass -p "$(REMOTE_PASSWD)" ssh $(REMOTE_USER)@$(REMOTE_IP)
 
 debug:
 	@echo "set architecture arm\ntar remote $(REMOTE_IP):2331\n \
