@@ -24,6 +24,15 @@ typedef struct
     int pidOutMax;
 } pid_calc_t, *ppid_calc_t;
 
+typedef enum _PID_PARAM{
+    PID_PARAM_KP = 0,
+    PID_PARAM_KI = 1,
+    PID_PARAM_KD = 2,
+    PID_PARAM_MAX
+} PID_PARAM;
+
+#define PID_PARAM_INDEX(_x)     ()
+
 void pid_init(pid_calc_t *ppid, int target, int iValid, int iOutLimit, int pidMax);
 void pid_set_param(pid_calc_t *ppid, float Kp, float Ki, float Kd);
 void pid_limit(int *key, int max);

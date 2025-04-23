@@ -16,6 +16,7 @@ enum __KEY {
     KEY_INVALID     = 0,
     KEY0_DOWN       = 1,
     KEY1_UP         = 2,
+    KEY0_1_MENU     = 3,
     KEY_MAX,
 };
 

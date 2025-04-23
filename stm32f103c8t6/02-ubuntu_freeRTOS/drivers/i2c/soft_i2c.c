@@ -2,7 +2,6 @@
 #include "delay.h"
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
-#include "log_module.h"
 
 void i2c_sda_dir(I2C_SDA_DIR_T out_in);
 static uint8_t i2c_start(void);
@@ -45,7 +44,6 @@ void i2c_sda_dir(I2C_SDA_DIR_T out_in)
  * ***/
 static uint8_t i2c_start(void)
 {
-	usart_printf("\r\n%s %d", __func__, __LINE__);
 	SDA_OUT();
 	I2C_SDA(1);
 	if (!READ_SDA())
@@ -65,7 +63,6 @@ static uint8_t i2c_start(void)
  * ***/
 static void i2c_stop(void)
 {
-	usart_printf("\r\n%s %d", __func__, __LINE__);
 	I2C_SCL(0);
 	SDA_OUT();
 	I2C_SDA(0);
@@ -89,16 +86,14 @@ static uint8_t i2c_wait_ack(void)
 	I2C_SCL(1);
 	delay_us(1);	 
 	while(READ_SDA()) {
-		wait_times++;
-		if(wait_times > 250) {
+		if(++wait_times > 250) {
 			i2c_stop();
 			return I2C_STAT_NAK;
 		}
 	}
 	I2C_SCL(0);
-	usart_printf("\r\n%s %d time %d", __func__, __LINE__, wait_times);
 
-	return I2C_STAT_ACK;  
+	return I2C_STAT_ACK;
 } 
 
 /* *** 
@@ -106,7 +101,7 @@ static uint8_t i2c_wait_ack(void)
  * SDA: ____________
  * ***/
 static void i2c_ack(void)
-{usart_printf("\r\n%s %d", __func__, __LINE__);
+{
 	I2C_SCL(0);
 	SDA_OUT();
 	I2C_SDA(0);
@@ -121,7 +116,7 @@ static void i2c_ack(void)
  * SDA: ------------
  * ***/
 static void i2c_nak(void)
-{usart_printf("\r\n%s %d", __func__, __LINE__);
+{
 	I2C_SCL(0);
 	SDA_OUT();
 	I2C_SDA(1);
@@ -136,7 +131,7 @@ static void i2c_nak(void)
 static uint8_t i2c_write_byte(uint8_t txd)
 {
     uint8_t t;
-	usart_printf("\r\n%s %d", __func__, __LINE__);
+
 	SDA_OUT();
     I2C_SCL(0);
     for(t = 0; t < 8; t++) {
@@ -155,7 +150,7 @@ static uint8_t i2c_write_byte(uint8_t txd)
 static uint8_t i2c_read_byte(I2C_STAT_T ack)
 {
 	unsigned char i, receive = 0;
-usart_printf("\r\n%s %d\n", __func__, __LINE__);
+
 	SDA_IN();
     for(i = 0; i < 8; i++) {
         I2C_SCL(0);
@@ -197,13 +192,13 @@ uint8_t i2c_transfer(uint16_t wlen, uint16_t rlen, uint8_t *data)
 			return I2C_STAT_RESTART_NAK;
 		if (ret = i2c_write_byte(data[i] | I2C_ADDR_R_BIT))
 			return I2C_STAT_RADDR_NAK;
+		data[i] = data[i] | I2C_ADDR_R_BIT;
 	}
-	while(i < rlen) {
-		if (i + 1 == rlen)
+	while(i++ < rlen) {
+		if (i == rlen)
 			data[i] = i2c_read_byte(I2C_STAT_NAK);
 		else
 			data[i] = i2c_read_byte(I2C_STAT_ACK);
-		i++;
 	}
     i2c_stop();
 

@@ -25,10 +25,12 @@ uint8_t key_scan(void)
 		pressedTick = 0;
 
 	if(pressedTick == 2) {
-		if(KEY0_VAL() == KEY_DOWN)
+		if(KEY0_VAL() == KEY_DOWN && KEY1_VAL() == KEY_UP)
 			return KEY0_DOWN;
-		else if(KEY1_VAL() == KEY_DOWN)
+		else if(KEY0_VAL() == KEY_UP && KEY1_VAL() == KEY_DOWN)
 			return KEY1_UP;
+		else if(KEY0_VAL() == KEY_DOWN && KEY1_VAL() == KEY_DOWN)
+			return KEY0_1_MENU;
 	}
 
 	return KEY_INVALID;

@@ -10,6 +10,7 @@
 #include "pid.h"
 #include "car.h"
 #include "soft_i2c.h"
+#include "oled.h"
 #include "app_tasks.h"
 #include "cli_commands.h"
 #include "log_module.h"
@@ -131,26 +132,20 @@ void task_main(void *pvParameters)
 			usart_puts_mutex_give();
         }
 
-		vTaskDelay(5);
+		vTaskDelay(10);
 	}
 }
-
-#define OLED_I2C_ADDR		(0x78)
-#define OLED_I2C_WRITE_ADDR	(OLED_I2C_ADDR & 0xFE)
-#define OLED_I2C_READ_ADDR	(OLED_I2C_ADDR | 0x1)
 
 void subtask1_sensors(void *pvParameters)
 {
 	uint8_t ret = 0;
-	uint8_t data[2] = {OLED_I2C_ADDR, 0x00};
 
-	ret = i2c_transfer(1, 1, data);
-
-	usart_printf("Sensors Task Create, ret %d, data %x %x\r\n", ret, data[0], data[1]);
+	usart_printf("Sensors Task Create\r\n");
+	usart_printf("row %d column %d\r\n", OLED_GRAM_ROW_NUM, OLED_GRAM_COLUMN_NUM);
 
 	while(1) {
-
-		vTaskDelay(100);
+		oled_display_refresh();
+		vTaskDelay(10);
 	}
 }
 
@@ -159,52 +154,87 @@ void subtask2_motors(void *pvParameters)
 	TickType_t currentTickCount, TickCount;
 	TickType_t lastTickCount, lastTimestampCount;
 	kalman kfp, *pkfp = &kfp;
+	float *ppidParam = &ppid->Kp;
 	int16_t xAxis, yAxis, zAxis, kxAxis;
 	int32_t pidOut = 0;
-	uint8_t keyValue = KEY_INVALID;
+	uint8_t keyValue = KEY_INVALID, car_stat = CAR_STAT_STOP;
 
 	key_init();
 	adxl345_init();
 	kalman_init(pkfp);
 	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
-	pid_set_param(ppid, 9.5f, 0.0f, 0.00f);
+	pid_set_param(ppid, 1.5f, 0.4f, 0.01f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
 
 	usart_printf("Motors Task Create!\r\n");
+	oled_show_string(OLED_X_Y_AXIS_S(0, 0), "kp:");
+	oled_show_string(OLED_X_Y_AXIS_S(0, 1), "ki:");
+	oled_show_string(OLED_X_Y_AXIS_S(0, 2), "kd:");
+
+	oled_show_string(OLED_X_Y_AXIS_S(8, 0), "po:");
+	oled_show_string(OLED_X_Y_AXIS_S(8, 1), "io:");
+	oled_show_string(OLED_X_Y_AXIS_S(8, 2), "do:");
+
+	oled_show_string(OLED_X_Y_AXIS_S(0, 3), "row:");
+	oled_show_string(OLED_X_Y_AXIS_S(8, 3), "ka:");
+	oled_show_string(OLED_X_Y_AXIS_S(0, 4), "out:");
+	oled_show_string(OLED_X_Y_AXIS_S(8, 4), "meu:");
 
 	while(1) {
 		currentTickCount = xTaskGetTickCount();
 		adxl345_read_x_axis(&xAxis);
 		kxAxis = (int16_t)kalman_filter(pkfp, xAxis);
 		pidOut = pid_calc(ppid, kxAxis);
-		car_stand_control(pidOut);
+
+		if (car_stat == CAR_STAT_RUN)
+			car_stand_control(pidOut);
+		else if (car_stat == CAR_STAT_STOP)
+			car_stop();
 
 		TickCount = currentTickCount - lastTickCount;
 		if (TickCount > pdMS_TO_TICKS(500)) {
 			lastTickCount = currentTickCount;
 
-			TASK_MOTOR_PRINT("[%d] r%d k%d (p%d.%d i%d.%d d%d.%d) O:%d P:%d I:%d D:%d\r\n",
-				currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis,
+			TASK_MOTOR_PRINT("[%d] r%d k%d t%d (p%d.%d i%d.%d d%d.%d) O%d P%d I%d D%d \r\n",
+				currentTickCount / configTICK_RATE_HZ, xAxis, kxAxis, ppid->target,
 				((uint32_t)(ppid->Kp*100))/100, ((uint32_t)(ppid->Kp*100))%100,
 				((uint32_t)(ppid->Ki*100))/100, ((uint32_t)(ppid->Ki*100))%100,
 				((uint32_t)(ppid->Kd*100))/100, ((uint32_t)(ppid->Kd*100))%100,
 				ppid->pidOut, ppid->pOut, ppid->iOut, ppid->dOut);
+			oled_show_float(OLED_X_Y_AXIS_S(3, 0), ppid->Kp, 2);
+			oled_show_float(OLED_X_Y_AXIS_S(3, 1), ppid->Ki, 2);
+			oled_show_float(OLED_X_Y_AXIS_S(3, 2), ppid->Kd, 2);
+			oled_show_num(OLED_X_Y_AXIS_S(10, 0), ppid->pOut, 4);
+			oled_show_num(OLED_X_Y_AXIS_S(10, 1), ppid->iOut, 4);
+			oled_show_num(OLED_X_Y_AXIS_S(10, 2), ppid->dOut, 4);
+			oled_show_num(OLED_X_Y_AXIS_S(3, 3), xAxis, 4);
+			oled_show_num(OLED_X_Y_AXIS_S(10, 3), kxAxis, 4);
+			oled_show_num(OLED_X_Y_AXIS_S(3, 4), ppid->pidOut, 4);
+			oled_show_string(OLED_X_Y_AXIS_S(12, 4), ppidParam == &ppid->Kp ? "kp" :
+				(ppidParam == &ppid->Ki ? "ki" : "kd"));
 		}
 
 		if (keyValue = key_scan()) {
 			switch(keyValue) {
 				case KEY0_DOWN:
-					ppid->Kp -= 2.0;
-					// ppid->Ki -= 0.01;
+					*ppidParam -= 0.2;
 					break;
 				case KEY1_UP:
-					ppid->Kp += 2.0;
-					// ppid->Ki += 0.01;
+					*ppidParam += 0.2;
 					break;
+				case KEY0_1_MENU:
+					if (ppidParam < &ppid->Kd)
+						ppidParam += 1;
+					else
+						ppidParam = &ppid->Kp;
 				default:
 					break;
+			}
+			if (car_stat == CAR_STAT_STOP) {
+				ppid->target = kxAxis;
+				car_stat = CAR_STAT_RUN;
 			}
 		}
 

@@ -57,6 +57,7 @@ INC	:= -I./libraries/CMSIS/CM3/CoreSupport \
 	   -I./hal/cli_command \
 	   -I./hal/mini_printf \
 	   -I./hal/ring_buffer \
+	   -I./hal/oled \
 	   -I./hal/cmd_line \
 	   -I./hal/RTT_printf/RTT \
 	   -I./app
@@ -112,6 +113,7 @@ SRCS	:= libraries/CMSIS/CM3/CoreSupport/core_cm3.c \
 	   hal/cli_command/cli_commands.c \
 	   hal/mini_printf/mini_printf.c \
 	   hal/ring_buffer/ring_buffer.c \
+	   hal/oled/oled.c \
 	   app/app_tasks.c \
 	   app/app_init.c \
 	   app/main.c

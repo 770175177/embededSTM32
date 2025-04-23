@@ -1,375 +1,323 @@
 #include "oled.h"
-#include "stdlib.h"
-#include "oledfont.h"  	 
-#include "delay.h"  
+#include "oledfont.h"
+#include "delay.h"
+#include "log_module.h"
 
 // OLED 的显存
-// 存放的格式如下
-// [0] 0 1 2 3 ... 127  
-// [1] 0 1 2 3 ... 127  
-// [2] 0 1 2 3 ... 127  
-// [3] 0 1 2 3 ... 127  
-// [4] 0 1 2 3 ... 127  
-// [5] 0 1 2 3 ... 127  
-// [6] 0 1 2 3 ... 127  
-// [7] 0 1 2 3 ... 127         
-uint8_t OLED_GRAM[128][8];
+// 驱动 IC:  SSD1306
+// 点阵大小: 64(行, 1 COM 控制8行) * 128(列)
+// 存放的格式如下:
+// 		[0] 0 1 2 3 ... 127
+// 		[1] 0 1 2 3 ... 127
+// 		[2] 0 1 2 3 ... 127
+// 		[3] 0 1 2 3 ... 127
+// 		[4] 0 1 2 3 ... 127
+// 		[5] 0 1 2 3 ... 127
+// 		[6] 0 1 2 3 ... 127
+// 		[7] 0 1 2 3 ... 127
+static uint8_t OLED_GRAM[128][8];
+uint8_t *oled_pgram = (uint8_t *)OLED_GRAM;
+uint8_t OLED_GRAM_ROW_NUM = sizeof(OLED_GRAM[0]);
+uint8_t OLED_ROWS_PIX_NUM = (sizeof(OLED_GRAM[0]) * 8);
+uint8_t OLED_GRAM_COLUMN_NUM = sizeof(OLED_GRAM) / sizeof(OLED_GRAM[0]);
 
- 
-// 更新显存到 oled      
-void oled_refresh_gram(void) 
+/* ------------------ inner functions -------------------- */
+static void oled_write_byte(uint8_t data, uint8_t mode)
 {
-	uint8_t i, n;
+	uint8_t ret = 0;
+	uint8_t buf[3] = {OLED_I2C_WRITE_ADDR, 0x00, data};
 
-	for (i = 0; i < 8; i++) {
-		OLED_WR_Byte(0xb0 + i, OLED_CMD);	// 设置页地址 (0~7)
-		OLED_WR_Byte(0x00, OLED_CMD);		// 设置显示位置 - 列低地址
-		OLED_WR_Byte(0x10, OLED_CMD);		// 设置显示位置 - 列高地址
-		for (n = 0; n < 128; n++)
-			OLED_WR_Byte(OLED_GRAM[n][i], OLED_DATA);
-		}
+	if (mode == OLED_DATA)
+		buf[1] = 0x40;
+	ret = i2c_transfer(3, 0, buf);
+	if (ret)
+		OLED_ERROR("write data 0x%x error, ret %d\r\n", data, ret);
 }
 
-
- 
-#if OLED_MODE == 1
-// 向 SSD1306 写入一个字节
-// dat: 要写入的数据、命令
-// cmd: 数据、命令标识，0 表示命令，1 表示数据
-void OLED_WR_Byte(uint8_t dat, uint8_t cmd) 
-{ 
-	DATAOUT(dat);
-	
-	OLED_RS = cmd;		
-	OLED_CS = 0;
-	OLED_WR = 0;
-	OLED_WR = 1;
-	OLED_CS = 1;
-	OLED_RS = 1;
+static inline void oled_write_cmd(uint8_t cmd)
+{
+	oled_write_byte(cmd, OLED_CMD);
 }
-#else
-// 向 SSD1306 写入一个字节
-// dat: 要写入的数据、命令
-// cmd: 数据、命令标识，0 表示命令，1 表示数据
-void OLED_WR_Byte(uint8_t dat, uint8_t cmd) 
-{ 
-	uint8_t i;
 
-	OLED_RS = cmd;		// 写命令
-	OLED_CS = 0;
+static inline void oled_write_data(uint8_t data)
+{
+	oled_write_byte(data, OLED_DATA);
+}
 
-	for (i = 0; i < 8; i++) {
-		OLED_SCLK = 0;
+/* ------------------ outer control functions -------------------- */
+void oled_init(void)
+{
+	oled_write_cmd(OLED_OFF);
+	oled_write_cmd(OLED_SET_COLUMN_LOW4_BITS(0));
+	oled_write_cmd(OLED_SET_COLUMN_HIGH4_BITS(0));
+	oled_write_cmd(OLED_SET_MAPPING_RAM_START_LINE);
+	oled_write_cmd(OLED_SET_CONTRAST_RATIO);		// 设置对比度 0x00 ~ 0xFF
+	oled_write_cmd(OLED_PARAM_CONTRAST_RATIO);
+	oled_write_cmd(OLED_SET_COLUMN_MAPPING_NORMAL);
+	oled_write_cmd(OLED_SET_ROW_SCAN_NORMAL);
+	oled_write_cmd(OLED_SET_DISPLAY_ENTIRE_PIX_OFF);
+	oled_write_cmd(OLED_SET_DISPLAY_NORMAL);
+	oled_write_cmd(OLED_SET_MULTIPLEX_RATION);
+	oled_write_cmd(OLED_PARAM_MULTIPLEX_RATION);
+	oled_write_cmd(OLED_SET_DISPLAY_RAM_OFFSET);
+	oled_write_cmd(OLED_PARAM_DISPLAY_RAM_OFFSET);
+	oled_write_cmd(OLED_SET_REFRESH_RATIO);
+	oled_write_cmd(OLED_PARAM_REFRESH_RATIO);
+	oled_write_cmd(OLED_SET_PRECHARGE_PERIOD);
+	oled_write_cmd(OLED_PARAM_PRECHARGE_PERIOD);
+	oled_write_cmd(OLED_SET_COM_PINS_HARDWARE_CFG);
+	oled_write_cmd(OLED_PARAM_HARDWARE_CFG);
+	oled_write_cmd(OLED_SET_VCOMH_DESELECT_LEVEL);
+	oled_write_cmd(OLED_PARAM_VCOMH_DESELECT_LEVEL);
+	oled_write_cmd(OLED_SET_ADDRESS_MODE);
+	oled_write_cmd(OLED_PARAM_ADDRESS_MODE_VERTICAL);
+	oled_write_cmd(OLED_SET_CHARGE_PUMP_SWITCH);
+	oled_write_cmd(OLED_PARAM_CHARGE_PUMP_ON);
+	oled_write_cmd(OLED_ON);
 
-		if (dat & 0x80)
-			OLED_SDIN = 1;
-		else
-			OLED_SDIN = 0;
+	oled_display_rotate(OLED_ROTATE_180_DEGREES);
+}
 
-		OLED_SCLK = 1;
-		dat <<= 1;
+void oled_display_on(void)
+{
+	oled_write_cmd(OLED_SET_CHARGE_PUMP_SWITCH);// 电荷泵使能
+	oled_write_cmd(OLED_PARAM_CHARGE_PUMP_ON);	// 开启电荷泵
+	oled_write_cmd(OLED_ON);					// 点亮屏幕
+}
+
+void oled_display_off(void)
+{
+	oled_write_cmd(OLED_SET_CHARGE_PUMP_SWITCH);// 电荷泵使能
+	oled_write_cmd(OLED_PARAM_CHARGE_PUMP_OFF);	// 关闭电荷泵
+	oled_write_cmd(OLED_OFF);					// 关闭屏幕
+}
+
+void oled_color_switch(OLED_COLOR color)
+{
+	if (color == OLED_COLOR_REVERSE)
+		oled_write_cmd(OLED_SET_DISPLAY_COLOR_REVERSE);
+	else
+		oled_write_cmd(OLED_SET_DISPLAY_NORMAL);
+}
+
+void oled_display_rotate(OLED_ROTATE degree)
+{
+	if (degree == OLED_ROTATE_180_DEGREES) {
+		oled_write_cmd(OLED_SET_ROW_SCAN_REVERSE);
+		oled_write_cmd(OLED_SET_COLUMN_MAPPING_REVERSE);
+	} else {
+		oled_write_cmd(OLED_SET_ROW_SCAN_NORMAL);
+		oled_write_cmd(OLED_SET_COLUMN_MAPPING_NORMAL);
+	}
+}
+
+void oled_display_refresh(void)
+{
+	uint8_t row, column;
+
+	for (row = 0; row < OLED_GRAM_ROW_NUM; row++) {
+		oled_write_cmd(OLED_SET_PAGE(row)); 			// set start row
+		oled_write_cmd(OLED_SET_COLUMN_LOW4_BITS(0));	// set start column low 4 bits
+		oled_write_cmd(OLED_SET_COLUMN_HIGH4_BITS(0));	// set start column high 4 bits
+		for (column = 0; column < OLED_GRAM_COLUMN_NUM; column++)
+			oled_write_data(OLED_GRAM[column][row]);
+	}
+}
+
+void oled_display_clear(void)
+{
+	uint8_t row, column;
+
+	for (row = 0; row < OLED_GRAM_ROW_NUM; row++)
+	   for (column = 0; column < OLED_GRAM_COLUMN_NUM; column++)
+			OLED_GRAM[column][row] = 0x00;
+
+	oled_display_refresh();
+}
+
+/* ------------------ outer draw functions -------------------- */
+/* x: 0 ~ 127		------> x
+ * y: 0 ~ 63		| y
+ */
+void oled_draw_point(uint8_t x, uint8_t y)
+{
+	uint8_t com, mod, mask;
+
+	com = y / OLED_GRAM_ROW_NUM;
+	mod = y % OLED_GRAM_ROW_NUM;
+	mask = 0x1 << mod;
+	OLED_GRAM[x][com] |= mask;
+}
+
+void oled_clear_point(uint8_t x, uint8_t y)
+{
+	uint8_t com, mod, mask;
+
+	com = y / OLED_GRAM_ROW_NUM;
+	mod = y % OLED_GRAM_ROW_NUM;
+	mask = 0x1 << mod;
+	OLED_GRAM[x][com] &= ~mask;
+}
+
+/* 直线函数：y = kx + b
+ * 已知两个点坐标，求直线方程
+ */
+void oled_draw_line(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
+{
+	uint8_t i, max_x, min_x, max_y, min_y;
+	int8_t k;
+
+	min_x = x1 < x2 ? x1 : x2;
+	max_x = x1 > x2 ? x1 : x2;
+	min_y = y1 < y2 ? y1 : y2;
+	max_y = y1 > y2 ? y1 : y2;
+
+	if ((min_x < 0) || (max_x >= OLED_GRAM_COLUMN_NUM) || (min_y < 0) || (max_y >= OLED_ROWS_PIX_NUM)) {
+		OLED_ERROR("oled draw line parameter error, (%d,%d)<--->(%d,%d)\r\n", x1, y1, x2, y2);
+		return;
 	}
 
-	OLED_CS = 1;
-	OLED_RS = 1;
+	if (x1 == x2) {		// 竖线没有斜率。特俗处理
+		for(i = min_y; i <= max_y; i++)
+			oled_draw_point(min_x, i);
+	} else {			// 斜线，k 表示斜率的 10 倍
+		k = (y2 - y1) * 10 / (x2 - x1);
+		if (x1 <= x2) {
+			for (i = x1; i <= x2; i++)
+				oled_draw_point(i, y1 + i * k / 10);
+		} else {
+			for (i = x1; i >= x2; i--)
+				oled_draw_point(i, y1 + i * k / 10);
+		}
+	}
 }
 
-#endif
-//   
-void OLED_Display_On(void) 
- { 
-OLED_WR_Byte(0X8D, OLED_CMD);	//SET DCDC����
-	OLED_WR_Byte(0X14, OLED_CMD);	//DCDC ON
-	OLED_WR_Byte(0XAF, OLED_CMD);	//DISPLAY ON
-} 
+/* x, y 为圆心坐标
+ * r 为圆的半径
+ */
+void oled_draw_circle(uint8_t x, uint8_t y, uint8_t r)
+{
+	int a, b, num;
+    a = 0;
+    b = r;
 
-//�ر�OLED��ʾ     
-void OLED_Display_Off(void) 
- { 
-OLED_WR_Byte(0X8D, OLED_CMD);	//SET DCDC����
-	OLED_WR_Byte(0X10, OLED_CMD);	//DCDC OFF
-	OLED_WR_Byte(0XAE, OLED_CMD);	//DISPLAY OFF
-} 
-
-//��������,������,������Ļ�Ǻ�ɫ��!��û����һ��!!!    
-void OLED_Clear(void) 
- { 
-uint8_t i, n;
-	
-for (i = 0; i < 8; i++)
-		for (n = 0; n < 128; n++)
-			OLED_GRAM[n][i] = 0X00;
-	
-OLED_Refresh_Gram();		//������ʾ
+    while (2 * b * b >= r * r) {
+        oled_draw_point(x + a, y - b);
+        oled_draw_point(x - a, y - b);
+        oled_draw_point(x - a, y + b);
+        oled_draw_point(x + a, y + b);
+ 
+        oled_draw_point(x + b, y + a);
+        oled_draw_point(x + b, y - a);
+        oled_draw_point(x - b, y - a);
+        oled_draw_point(x - b, y + a);
+        
+        a++;
+        num = (a * a + b * b) - r * r;	// 计算画的点到圆心的距离
+        if(num > 0) {
+            b--;
+            a--;
+        }
+    }
 }
 
+/* ------------------ outer char functions -------------------- */
+/* 显示一个字符
+ * x: 0 ~ 127
+ * y: 0 ~ 63
+ * size: 字体大小，12/16/24
+ */
+void oled_show_char(uint8_t x, uint8_t y, uint8_t size1, uint8_t chr)
+{
+	uint8_t i, m, temp, size2, chr1;
+	uint8_t y0 = y;
 
-//���� 
-//x:0~127
-//y:0~63
-//t:1 ��� 0,���                
-void OLED_DrawPoint(uint8_t x, uint8_t y, uint8_t t) 
- { 
-uint8_t pos, bx,
-		temp = 0;
-	
-if (x > 127 || y > 63)
-		return;					//������Χ��.
-	pos = 7 - y / 8;
-	
-bx = y % 8;
-	
-temp = 1 << (7 - bx);
-	
-if (t)
-		OLED_GRAM[x][pos] |= temp;
-	
-	else
-		OLED_GRAM[x][pos] &= ~temp;
-
-}
-
-
-//x1,y1,x2,y2 �������ĶԽ�����
-//ȷ��x1<=x2;y1<=y2 0<=x1<=127 0<=y1<=63         
-//dot:0,���;1,���     
-void OLED_Fill(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2,
-			   uint8_t dot) 
- { 
-uint8_t x, y;
-	
-for (x = x1; x <= x2; x++)
-		
-	{
-		
-for (y = y1; y <= y2; y++)
-			OLED_DrawPoint(x, y, dot);
-	
-}
-	
-OLED_Refresh_Gram();		//������ʾ
-}
-
-
-//��ָ��λ����ʾһ���ַ�,���������ַ�
-//x:0~127
-//y:0~63
-//mode:0,������ʾ;1,������ʾ                 
-//size:ѡ������ 16/12 
-void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size,
-				   uint8_t mode) 
- { 
-uint8_t temp, t, t1;
-	
-uint8_t y0 = y;
-	
-uint8_t csize = (size / 8 + ((size % 8) ? 1 : 0)) * (size / 2);	//�õ�����һ���ַ���Ӧ������ռ���ֽ���
-	chr = chr - ' ';			//�õ�ƫ�ƺ��ֵ        
-	for (t = 0; t < csize; t++)
-		
-	{
-		
-if (size == 12)
-			temp = asc2_1206[chr][t];	//����1206����
-		else if (size == 16)
-			temp = asc2_1608[chr][t];	//����1608����
-		else if (size == 24)
-			temp = asc2_2412[chr][t];	//����2412����
+	size2 = (size1 / 8 + ((size1 % 8) ? 1 : 0)) * (size1 / 2);
+	chr1 = chr - ' ';
+	for(i = 0; i < size2; i++) {
+		if(size1 == OLED_FONT_SIZE_SMALL)
+			temp = asc2_1206[chr1][i];
+		else if(size1 == OLED_FONT_SIZE_MIDDLE)
+			temp = asc2_1608[chr1][i];
+		else if(size1 == OLED_FONT_SIZE_BIG)
+        	temp = asc2_2412[chr1][i];
 		else
-			return;				//û�е��ֿ�
-		for (t1 = 0; t1 < 8; t1++)
-			
-		{
-			
-if (temp & 0x80)
-				OLED_DrawPoint(x, y, mode);
-			
+			return;
+		for (m = 0; m < 8; m++) {
+			if(temp & 0x80)
+				oled_draw_point(x, y);
 			else
-				OLED_DrawPoint(x, y, !mode);
-			
-temp <<= 1;
-			
-y++;
-			
-if ((y - y0) == size)
-				
-			{
-				
-y = y0;
-				
-x++;
-				
-break;
-			
-}
-		
-}
-	
+				oled_clear_point(x, y);
+			temp <<= 1;
+			y++;
+			if((y - y0) == size1) {
+				y = y0;
+				x++;
+				break;
+			}
+		}
+	}
 }
 
+void oled_show_string(uint8_t x, uint8_t y, uint8_t size1, uint8_t *chr)
+{
+	while ((*chr >= ' ') && (*chr <= '~')) {
+		oled_show_char(x, y, size1, *chr);
+		x += size1 / 2;
+		if (x > 128 - size1) {
+			x = 0;
+			y += 2;
+		}
+		chr++;
+	}
 }
 
+// m ^ n
+uint32_t oled_pow(uint8_t m, uint8_t n)
+{
+	uint32_t result = 1;
 
-//m^n����
-	u32 mypow(uint8_t m, uint8_t n) 
- { 
-u32 result = 1;
-	
-while (n--)
-		result *= m;
-	
-return result;
+	while (n--)
+	  result *= m;
 
+	return result;
 }
 
+void oled_show_num(uint8_t x, uint8_t y, uint8_t size1, int16_t num, uint8_t len)
+{
+	uint8_t t = 0, temp = 0;
 
-//��ʾ2������
-//x,y :�������     
-//len :���ֵ�λ��
-//size:�����С
-//mode:ģʽ 0,���ģʽ;1,����ģʽ
-//num:��ֵ(0~4294967295);             
-void OLED_ShowNum(uint8_t x, uint8_t y, u32 num, uint8_t len,
-				  uint8_t size) 
- { 
-uint8_t t, temp;
-	
-uint8_t enshow = 0;
-	
-for (t = 0; t < len; t++)
-		
-	{
-		
-temp = (num / mypow(10, len - t - 1)) % 10;
-		
-if (enshow == 0 && t < (len - 1))
-			
-		{
-			
-if (temp == 0)
-				
-			{
-				
-OLED_ShowChar(x + (size / 2) * t, y, ' ', size, 1);
-				
-continue;
-			
-} else
-				enshow = 1;
-		
- 
-}
-		
-OLED_ShowChar(x + (size / 2) * t, y, temp + '0', size, 1);
-	
+	if (num < 0) {
+		oled_show_char(x + (size1 / 2) * t, y, size1, '-');
+		num = 0 - num;
+	} else {
+		oled_show_char(x + (size1 / 2) * t, y, size1, ' ');
+	}
+	len++;
+	for(t = 1; t < len; t++) {
+		temp = (num / oled_pow(10, len - t - 1)) % 10;
+		if(temp == 0)
+			oled_show_char(x + (size1 / 2) * t, y, size1, '0');
+		else
+			oled_show_char(x + (size1 / 2) * t, y, size1, temp + '0');
+	}
 }
 
-}
+void oled_show_float(uint8_t x, uint8_t y, uint8_t size1, float fnum, uint8_t len)
+{
+	uint8_t t, temp;
+	uint32_t num = (uint32_t)(fnum * 100);
+	len += 2;
 
-
-//��ʾ�ַ���
-//x,y:�������  
-//size:�����С 
-//*p:�ַ�����ʼ��ַ 
-void OLED_ShowString(uint8_t x, uint8_t y, const uint8_t *p, uint8_t size) 
- { 
-while ((*p <= '~') && (*p >= ' '))	//�ж��ǲ��ǷǷ��ַ�!
-	{ 
-if (x > (128 - (size / 2))) { x = 0; y += size;}
-									
-if (y > (64 - size))
-									{
-									y = x = 0; OLED_Clear();}
-									
-OLED_ShowChar(x, y, *p, size, 1);
-									
-x += size / 2; 
-p++; 
+	for(t = 0; t < len; t++) {
+		temp = (num / oled_pow(10, len - t - 1)) % 10;
+		if(temp == 0)
+			oled_show_char(x + (size1 / 2) * t, y, size1, '0');
+		else
+			oled_show_char(x + (size1 / 2) * t, y, size1, temp + '0');
+		if(t == len - 3) {
+			oled_show_char(x + (size1 / 2) * (++t), y, size1, '.');
+			len++;
+		}
+	}
 }
-									
- 
-}
-
-									
-//��ʼ��SSD1306                     
-									void OLED_Init(void) 
- { 
-GPIO_InitTypeDef
-									GPIO_InitStructure;
-									
- 
-RCC_APB2PeriphClockCmd
-									(RCC_APB2Periph_GPIOB |
-									 RCC_APB2Periph_GPIOC, ENABLE); 
- 
-#if OLED_MODE==1	
-									RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);	//ʹ��AFIOʱ��
-									
-GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);	//JTAG-DP ʧ�� + SW-DPʹ�� 
-									
-GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7; 
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//�������
-									GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-GPIO_Init(GPIOB, &GPIO_InitStructure); 
-GPIO_Write(GPIOB, 0XFFFF); 
- 
-GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9; 
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//�������
-									GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-GPIO_Init(GPIOC, &GPIO_InitStructure); 
-GPIO_SetBits(GPIOC, GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9);	//���ÿһλ����һ��GPIO_Pin,�����ͨ�������ʽ����ʼ�����IO
-									
-#else							/* 
- */
-									GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1; 
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//�������
-									GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-GPIO_Init(GPIOB, &GPIO_InitStructure); 
-GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7; 
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;	//�������    
-									GPIO_Init(GPIOB, &GPIO_InitStructure); 
-GPIO_Write(GPIOB, 0X03); 
- 
-GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9; 
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//�������
-									GPIO_InitStructure.GPIO_Speed =
-									GPIO_Speed_50MHz;
-									
-GPIO_Init(GPIOC, &GPIO_InitStructure);
-									
-GPIO_SetBits(GPIOC,
-												  GPIO_Pin_8 | GPIO_Pin_9); 
-#endif							/* 
- */
-									
-OLED_WR_Byte(0xAE, OLED_CMD);	//�ر���ʾ
-									OLED_WR_Byte(0xD5, OLED_CMD);	//����ʱ�ӷ�Ƶ����,��Ƶ��
-									OLED_WR_Byte(80, OLED_CMD);	//[3:0],��Ƶ����;[7:4],��Ƶ��
-									OLED_WR_Byte(0xA8, OLED_CMD);	//��������·��
-									OLED_WR_Byte(0X3F, OLED_CMD);	//Ĭ��0X3F(1/64) 
-									OLED_WR_Byte(0xD3, OLED_CMD);	//������ʾƫ��
-									OLED_WR_Byte(0X00, OLED_CMD);	//Ĭ��Ϊ0
-									
-OLED_WR_Byte(0x40, OLED_CMD);	//������ʾ��ʼ�� [5:0],����.
-									
-OLED_WR_Byte(0x8D, OLED_CMD);	//��ɱ�����
-									OLED_WR_Byte(0x14, OLED_CMD);	//bit2������/�ر�
-									OLED_WR_Byte(0x20, OLED_CMD);	//�����ڴ��ַģʽ
-									OLED_WR_Byte(0x02, OLED_CMD);	//[1:0],00���е�ַģʽ;01���е�ַģʽ;10,ҳ��ַģʽ;Ĭ��10;
-									OLED_WR_Byte(0xA1, OLED_CMD);	//���ض�������,bit0:0,0->0;1,0->127;
-									OLED_WR_Byte(0xC0, OLED_CMD);	//����COMɨ�跽��;bit3:0,��ͨģʽ;1,�ض���ģʽ COM[N-1]->COM0;N:����·��
-									OLED_WR_Byte(0xDA, OLED_CMD);	//����COMӲ����������
-									OLED_WR_Byte(0x12, OLED_CMD);	//[5:4]����
-									
-OLED_WR_Byte(0x81, OLED_CMD);	//�Աȶ�����
-									OLED_WR_Byte(0xEF, OLED_CMD);	//1~255;Ĭ��0X7F (��������,Խ��Խ��)
-									OLED_WR_Byte(0xD9, OLED_CMD);	//����Ԥ�������
-									OLED_WR_Byte(0xf1, OLED_CMD);	//[3:0],PHASE 1;[7:4],PHASE 2;
-									OLED_WR_Byte(0xDB, OLED_CMD);	//����VCOMH ��ѹ����
-									OLED_WR_Byte(0x30, OLED_CMD);	//[6:4] 000,0.65*vcc;001,0.77*vcc;011,0.83*vcc;
-									
-OLED_WR_Byte(0xA4, OLED_CMD);	//ȫ����ʾ����;bit0:1,����;0,�ر�;(����/����)
-									OLED_WR_Byte(0xA6, OLED_CMD);	//������ʾ��ʽ;bit0:1,������ʾ;0,������ʾ                                 
-									OLED_WR_Byte(0xAF, OLED_CMD);	//������ʾ  
-									OLED_Clear(); 
-} 
