@@ -306,10 +306,18 @@ void oled_show_num(uint8_t x, uint8_t y, uint8_t size1, int16_t num, uint8_t len
 void oled_show_float(uint8_t x, uint8_t y, uint8_t size1, float fnum, uint8_t len)
 {
 	uint8_t t, temp;
-	uint32_t num = (uint32_t)(fnum * 100);
+	int32_t num = 0;
 	len += 2;
 
-	for(t = 0; t < len; t++) {
+	if (fnum < 0) {
+		oled_show_char(x + (size1 / 2) * t, y, size1, '-');
+		num = (int32_t)((-fnum) * 100);
+	} else {
+		oled_show_char(x + (size1 / 2) * t, y, size1, ' ');
+		num = (int32_t)(fnum * 100);
+	}
+
+	for(t = 1; t <= len; t++) {
 		temp = (num / oled_pow(10, len - t - 1)) % 10;
 		if(temp == 0)
 			oled_show_char(x + (size1 / 2) * t, y, size1, '0');

@@ -163,7 +163,7 @@ void subtask2_motors(void *pvParameters)
 	adxl345_init();
 	kalman_init(pkfp);
 	pid_init(ppid, 0, PWM4_PER_MAX/3, PWM4_PER_MAX/2, PWM4_PER_MAX);
-	pid_set_param(ppid, 1.5f, 0.4f, 0.01f);
+	pid_set_param(ppid, 3.5f, 0.0f, 0.00f);
 
 	lastTickCount = xTaskGetTickCount();
 	lastTimestampCount = lastTickCount;
@@ -203,9 +203,9 @@ void subtask2_motors(void *pvParameters)
 				((uint32_t)(ppid->Ki*100))/100, ((uint32_t)(ppid->Ki*100))%100,
 				((uint32_t)(ppid->Kd*100))/100, ((uint32_t)(ppid->Kd*100))%100,
 				ppid->pidOut, ppid->pOut, ppid->iOut, ppid->dOut);
-			oled_show_float(OLED_X_Y_AXIS_S(3, 0), ppid->Kp, 2);
-			oled_show_float(OLED_X_Y_AXIS_S(3, 1), ppid->Ki, 2);
-			oled_show_float(OLED_X_Y_AXIS_S(3, 2), ppid->Kd, 2);
+			oled_show_float(OLED_X_Y_AXIS_S(2, 0), ppid->Kp, 2);
+			oled_show_float(OLED_X_Y_AXIS_S(2, 1), ppid->Ki, 2);
+			oled_show_float(OLED_X_Y_AXIS_S(2, 2), ppid->Kd, 2);
 			oled_show_num(OLED_X_Y_AXIS_S(10, 0), ppid->pOut, 4);
 			oled_show_num(OLED_X_Y_AXIS_S(10, 1), ppid->iOut, 4);
 			oled_show_num(OLED_X_Y_AXIS_S(10, 2), ppid->dOut, 4);
@@ -219,7 +219,7 @@ void subtask2_motors(void *pvParameters)
 		if (keyValue = key_scan()) {
 			switch(keyValue) {
 				case KEY0_DOWN:
-					*ppidParam -= 0.2;
+					*ppidParam -= 0.1;
 					break;
 				case KEY1_UP:
 					*ppidParam += 0.2;
